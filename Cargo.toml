@@ -1,0 +1,17 @@
+[package]
+name = "aligner-macroquad"
+version = "0.1.0"
+edition = "2024"
+authors = ["Blayze Millwrd"]
+
+[[bin]]
+name = "track-aligner"
+path = "src/main.rs"
+
+[dependencies]
+macroquad = "0.4.14"
+nalgebra = "0.32.2"
+log = {version = "0.4.19"}#, features = ["release_max_level_info"]}
+env_logger = "0.10.0"
+argparse = "0.2.2"
+csv = "1.4.0"

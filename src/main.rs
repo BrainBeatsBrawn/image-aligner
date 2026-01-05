@@ -1,0 +1,251 @@
+extern crate nalgebra as na;
+extern crate argparse;
+
+use argparse::{ArgumentParser, /*StoreTrue,*/ Store};
+
+use macroquad::prelude::*;
+use na::Vector2;
+//use std::io::{stdout, stderr};
+use std::fs::File;
+use std::io::Read;
+
+mod warpset;
+use warpset::WarpSet;
+
+//const FRAGMENT_SHADER: &'static str = include_str!("display_shader.frag");
+//const VERTEX_SHADER: &'static str = include_str!("display_shader.vert");
+
+
+#[macroquad::main("Track Aligner")]
+async fn main() {
+
+    // Make the sahders here, since it's a pain to make them elsewhere.
+    //let offset_display_material = load_material(
+    //    ShaderSource::Glsl {
+    //        vertex: VERTEX_SHADER,
+    //        fragment: FRAGMENT_SHADER,
+    //    },
+    //    MaterialParams {
+    //        ..Default::default()
+    //    }
+    //).unwrap();
+    
+    // Constants
+    const SCROLL_SPEED: f32 = 0.2; // 20% size
+    const MOVE_SPEED: f32 = 1.0; // scale for movement
+    const CAM_HEIGHT:f32 = 10.0;
+    const MOUSE_HEIGHT: f32 = 9.0;
+    const BASELINE_HEIGHT: f32 = 0.0;
+
+    env_logger::init();
+
+    info!("Track Aligner Running!");
+    
+    //// Parse command line arguments
+    let mut baseline_image_path = String::new();
+    let mut baseline_bush_segmentation_path = String::new();
+    let mut offset_image_path = String::new();
+    let mut offset_bush_segmentation_path = String::new();
+    let mut start_points_input = String::new();
+
+    // UI properties
+    //let mut ui_config = UiConfig::new();
+
+    // Handles parsing the arguments
+    {
+        let mut ap = ArgumentParser::new();
+        //ap.set_description("Aligns two the same region based on bush segmentation.\n
+        //                   'q' - quit.\n
+        //                   'w'/'s' - change offset opacity.\n
+        //                   'a' - switch display mode.\n
+        //                   'p' - play/pause the solver.\n
+        //                   'o' - save the current warp mesh to that specified by '-o'.\n
+        //                   't' - save the current track data.\n
+        //                   tab - subdivide the current warp mesh.\n
+        //                   Click and drag to move around, scroll to zoom in and out.\n
+        //                   ");
+        ap.set_description("A PROGRAM!");
+        ap.refer(&mut baseline_image_path)
+            .add_argument("BASELINE_IMAGE", Store, "Path to the baseline image (the one that will not be warped)")
+            .required();
+        ap.refer(&mut baseline_bush_segmentation_path)
+            .add_argument("BASELINE_SEG", Store, "Path to the baseline bush segmentation image")
+            .required();
+        ap.refer(&mut offset_image_path)
+            .add_argument("OFFSET_IMAGE", Store, "Path to the offset image (the one that will be warped)")
+            .required();
+        ap.refer(&mut offset_bush_segmentation_path)
+            .add_argument("OFFSET_IMAGE_SEG", Store, "Path to the offset bush segmentation image")
+            .required();
+        ap.refer(&mut start_points_input)
+            .add_option(&["-s", "--start-points"], Store, "Comma-separated list of four points in the baseline image-space that will be used as a starting point for the warp search. Row-major order. Each point is a comma-separated pair of numbers, e.g. \"(0,0),(1,0),(0,1),(1,1)\" (including quotation marks)");
+        ap.parse_args_or_exit();
+    }
+    
+    //// Configure parsed variables
+    info!("Loading baseline image from {}...", baseline_image_path);
+    let baseline_image: Texture2D = load_texture(baseline_image_path.as_str()).await.unwrap();
+    info!("\t...done.");
+    info!("Loading baseline bush segmentation image from {}...", baseline_bush_segmentation_path);
+    let baseline_segmentation_image: Texture2D = load_texture(baseline_bush_segmentation_path.as_str()).await.unwrap();
+    let baseline_segmentation_data: Image = baseline_segmentation_image.get_texture_data();
+    info!("\t...done.");
+    info!("Loading offset image from {}...", offset_image_path);
+    let offset_image: Texture2D = load_texture(offset_image_path.as_str()).await.unwrap();
+    info!("\t...done.");
+    info!("Loading offset bush segmentation image from {}...", offset_bush_segmentation_path);
+    let offset_segmentation_image: Texture2D = load_texture(offset_bush_segmentation_path.as_str()).await.unwrap();
+    let offset_segmentation_data: Image = offset_segmentation_image.get_texture_data();
+    info!("\t...done.");
+    let start_points = get_start_points_from_string(start_points_input).expect("Start points malformed.");
+    info!("Start points provided: {:?}", start_points);
+
+
+    //// Begin processing
+    // Calculate the width and height of the baseline image so we can draw the baseline image to it's true aspect.
+    let baseline_size = vec2(baseline_image.width() as f32 / baseline_image.height() as f32, 1.0);
+    let baseline_radial_size = baseline_size/2.; // For some reason the draw_plane method uses radii
+    let mut warpset = WarpSet::new(&start_points, &offset_image).expect("Failed to create warpset from start points.");
+
+    let mut camera = Camera3D{
+        position: vec3(0.0, CAM_HEIGHT, 0.0),
+        target: vec3(0.0, 0.0, 0.0), // Camera is looking at the origin
+        up: vec3(0.0, 0.0, -1.0), // Camera's "up" direction is the negative z axis so that the camera is looking down the the xz plane forming the same setup as the xy in UV-space
+        fovy: 1., // Near plane width in orthographic view
+        projection: Projection::Orthographics,
+        //viewport: Seome((0,0,0,0)), // If we ever want to have a UI, the graphics will be rendered to the right
+        ..Default::default()
+    };
+    
+
+    loop {
+        clear_background(LIGHTGRAY);
+
+        set_camera(&camera);
+
+        // Draw a point at the mouse for debug purposes
+        let mouse_pos_w = get_mouse_wcoords(&camera);
+        //draw_sphere(vec3(mouse_pos_w.x, MOUSE_HEIGHT, mouse_pos_w.y), 0.05, None, YELLOW);
+        let mouse_pos_bl = get_mouse_baseline_coords(&camera, &baseline_size);
+
+        // Update the warpset to track actions relative to the mouse
+        warpset.update_closest_point(&mouse_pos_bl, is_mouse_button_down(MouseButton::Left));
+
+        // Handle mouse interactions
+        {
+            let (_, scroll) = mouse_wheel(); // Returns delta - either -1, 0, or 1
+            camera.fovy *= 1.0 + scroll * SCROLL_SPEED;
+
+            let delta_pos = mouse_delta_position();
+            if is_mouse_button_down(MouseButton::Right)
+            {
+                camera.position.x += delta_pos.x * camera.fovy * MOVE_SPEED;
+                camera.position.z += delta_pos.y * camera.fovy * MOVE_SPEED;
+                camera.target.x = camera.position.x;
+                camera.target.z = camera.position.z;
+            }
+        }
+
+
+        // Handle keyboard interactions
+        if is_key_pressed(KeyCode::Q)
+        {
+            break;
+        }
+        if is_key_pressed(KeyCode::Tab)
+        {
+            warpset.subdivide();
+        }
+        if is_key_pressed(KeyCode::Up)
+        {
+            warpset.offset_opacity = (warpset.offset_opacity + 0.1).min(1.0);
+            println!("Set offset opacity to {:?}", warpset.offset_opacity);
+        }
+        if is_key_pressed(KeyCode::Down)
+        {
+            warpset.offset_opacity = (warpset.offset_opacity - 0.1).max(0.0);
+            println!("Set offset opacity to {:?}", warpset.offset_opacity);
+        }
+
+
+        //// Handle drawing of the UI components
+        // baseline image
+        draw_plane(vec3(baseline_radial_size.x, BASELINE_HEIGHT, 0.5),
+                   baseline_radial_size, Some(&baseline_image),
+                   WHITE);
+        
+        // grid
+        draw_grid(20, 1., BLACK, GRAY);
+
+        warpset.draw_warped_offset_image(&offset_image, &baseline_radial_size);
+        warpset.draw_ui(&baseline_size);
+
+        set_default_camera();
+
+        // Stuff can be drawn here in default-land if needed.
+
+        next_frame().await
+    }
+}
+
+fn get_mouse_wcoords(cam: &Camera3D) -> Vec2
+{
+    // Assembling it the old-fashioned way, because it's easier:
+    let mouse_pos_local = mouse_position_local()*0.5 * vec2(screen_width()/screen_height(), 1.) * cam.fovy;
+    mouse_pos_local + vec2(cam.position.x, cam.position.z)
+}
+
+fn get_mouse_baseline_coords(cam: &Camera3D, baseline_size: &Vec2) -> Vec2
+{
+    let mouse_w_coords = get_mouse_wcoords(cam);
+    mouse_w_coords/(*baseline_size)
+}
+
+fn get_start_points_from_string(mut start_points_input: String) -> Option<Vec::<Vector2<f32>>>
+{
+    let mut out = Vec::<Vector2<f32>>::new();
+
+    if start_points_input == ""
+    {
+        info!("No points provided, using default values (unit square)...");
+        out = vec![
+            Vector2::new(0.0,0.0),
+            Vector2::new(1.0,0.0),
+            Vector2::new(0.0,1.0),
+            Vector2::new(1.0,1.0)
+        ];
+    }else{
+        info!("Custom start points provided, parsing...");
+        if start_points_input.ends_with(".wrp")
+        {
+            info!("\tWarp mesh file '{}' provided, loading...", start_points_input);
+            let mut f = File::open(start_points_input.as_str()).unwrap();
+            let mut data = String::new();
+            match f.read_to_string(&mut data)
+            {
+                Ok(_) => {
+                    start_points_input = data;
+                },
+                Err(e) => {
+                    error!("Error reading file: {}", e);
+                }
+            }
+        }
+        let point_strings = start_points_input.split("),(").collect::<Vec<&str>>();
+        for point in point_strings
+        {
+            let point_str = point.trim().trim_matches(|c| c == '(' || c == ')');
+            let vals = point_str.split(",").collect::<Vec<&str>>();
+            let x = vals[0].parse::<f32>();
+            let y = vals[1].parse::<f32>();
+            if vals.len() != 2 || x.is_err() || y.is_err()
+            {
+                error!("Invalid point \"{}\", found in supplied start points argument \"{}\"",point_str, start_points_input);
+                return None;
+            }
+            out.push(Vector2::new(x.unwrap(),y.unwrap()));
+        }
+        info!("\t...done.");
+    }
+    Some(out)
+}
