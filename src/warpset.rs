@@ -4,6 +4,9 @@ use na::{Vector2,Vector3,Matrix3,Matrix4,Matrix3x4,Matrix2x4, OMatrix, Dyn, Matr
 use macroquad::prelude::*;
 use crate::miniquad::{BlendState, Equation, BlendFactor, BlendValue};
 use macroquad::prelude::ShaderSource;
+use std::fs::{File, read_to_string};
+use std::io::Read;
+use std::io::Write;
 
 const UI_HEIGHT:f32 = 5.0;
 const WARPMESH_STACK_HEIGHT:f32 = 1.0;
@@ -115,6 +118,15 @@ impl WarpSet
                 offset_image
                 )
             )
+    }
+
+    // Creates a new warpset from a file
+    pub fn from_file(filepath: &str, offset_image: & Texture2D) -> Option<WarpSet>
+    {
+        println!("Reading file \"{}\"...", filepath);
+        let file_contents = read_to_string(filepath).expect("Couldn't load file from given filepath.");
+        let vector = get_start_points_from_string(file_contents).expect("Start points malformed.");
+        Self::new(&vector, offset_image)
     }
 
     // Subdivides this mesh
@@ -327,6 +339,22 @@ impl WarpSet
             }
         }
     }
+    
+
+    //// Saving
+    pub fn write_to_file(&self, path: &str) -> ()
+    {
+        println!("Writing warpmesh to file: {}...", path);
+        let mut file = File::create(path).unwrap();
+        let mut mesh_string = String::new();
+        for p in self.warped_points.transpose().iter()
+        {
+            mesh_string.push_str(&format!("({},{}),", p.x, p.y));
+        }
+        mesh_string.pop(); // Remove the last comma
+        file.write_all(mesh_string.as_bytes()).unwrap();
+        println!("Warpmesh file written.");
+    }
 
     //// Drawing
     pub fn draw_ui(&self, baseline_size: &Vec2) -> ()
@@ -419,4 +447,53 @@ impl WarpSet
         // Go back to the default material
         gl_use_default_material();
     }
+}
+
+pub fn get_start_points_from_string(mut start_points_input: String) -> Option<Vec::<Vector2<f32>>>
+{
+    let mut out = Vec::<Vector2<f32>>::new();
+
+    if start_points_input == ""
+    {
+        println!("No points provided, using default values (unit square)...");
+        out = vec![
+            Vector2::new(0.0,0.0),
+            Vector2::new(1.0,0.0),
+            Vector2::new(0.0,1.0),
+            Vector2::new(1.0,1.0)
+        ];
+    }else{
+        println!("Custom start points provided, parsing...");
+        if start_points_input.ends_with(".wrp")
+        {
+            println!("\tWarp mesh file '{}' provided, loading...", start_points_input);
+            let mut f = File::open(start_points_input.as_str()).unwrap();
+            let mut data = String::new();
+            match f.read_to_string(&mut data)
+            {
+                Ok(_) => {
+                    start_points_input = data;
+                },
+                Err(e) => {
+                    error!("Error reading file: {}", e);
+                }
+            }
+        }
+        let point_strings = start_points_input.split("),(").collect::<Vec<&str>>();
+        for point in point_strings
+        {
+            let point_str = point.trim().trim_matches(|c| c == '(' || c == ')');
+            let vals = point_str.split(",").collect::<Vec<&str>>();
+            let x = vals[0].parse::<f32>();
+            let y = vals[1].parse::<f32>();
+            if vals.len() != 2 || x.is_err() || y.is_err()
+            {
+                error!("Invalid point \"{}\", found in supplied start points argument \"{}\"",point_str, start_points_input);
+                return None;
+            }
+            out.push(Vector2::new(x.unwrap(),y.unwrap()));
+        }
+        info!("\t...done.");
+    }
+    Some(out)
 }

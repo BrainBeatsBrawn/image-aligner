@@ -6,11 +6,12 @@ use argparse::{ArgumentParser, /*StoreTrue,*/ Store};
 use macroquad::prelude::*;
 use na::Vector2;
 //use std::io::{stdout, stderr};
+use chrono::Utc;
 use std::fs::File;
 use std::io::Read;
 
 mod warpset;
-use warpset::WarpSet;
+use warpset::{WarpSet, get_start_points_from_string};
 
 //const FRAGMENT_SHADER: &'static str = include_str!("display_shader.frag");
 //const VERTEX_SHADER: &'static str = include_str!("display_shader.vert");
@@ -47,6 +48,7 @@ async fn main() {
     let mut offset_image_path = String::new();
     let mut offset_bush_segmentation_path = String::new();
     let mut start_points_input = String::new();
+    let mut start_points_filepath = String::new();
 
     // UI properties
     //let mut ui_config = UiConfig::new();
@@ -79,6 +81,8 @@ async fn main() {
             .required();
         ap.refer(&mut start_points_input)
             .add_option(&["-s", "--start-points"], Store, "Comma-separated list of four points in the baseline image-space that will be used as a starting point for the warp search. Row-major order. Each point is a comma-separated pair of numbers, e.g. \"(0,0),(1,0),(0,1),(1,1)\" (including quotation marks)");
+        ap.refer(&mut start_points_filepath)
+            .add_option(&["-i", "--input-file"], Store, "Path to a file from a previously saved session (saving is done with the 's' key).");
         ap.parse_args_or_exit();
     }
     
@@ -97,7 +101,7 @@ async fn main() {
     let offset_segmentation_image: Texture2D = load_texture(offset_bush_segmentation_path.as_str()).await.unwrap();
     let offset_segmentation_data: Image = offset_segmentation_image.get_texture_data();
     info!("\t...done.");
-    let start_points = get_start_points_from_string(start_points_input).expect("Start points malformed.");
+    let start_points = warpset::get_start_points_from_string(start_points_input).expect("Start points malformed.");
     info!("Start points provided: {:?}", start_points);
 
 
@@ -105,7 +109,12 @@ async fn main() {
     // Calculate the width and height of the baseline image so we can draw the baseline image to it's true aspect.
     let baseline_size = vec2(baseline_image.width() as f32 / baseline_image.height() as f32, 1.0);
     let baseline_radial_size = baseline_size/2.; // For some reason the draw_plane method uses radii
-    let mut warpset = WarpSet::new(&start_points, &offset_image).expect("Failed to create warpset from start points.");
+    let mut warpset;
+    if start_points_filepath.trim() == "" {
+        warpset = WarpSet::new(&start_points, &offset_image).expect("Failed to create warpset from start points.");
+    }else{
+        warpset = WarpSet::from_file(&start_points_filepath, &offset_image).expect("Failed to create warpset from file.");
+    };
 
     let mut camera = Camera3D{
         position: vec3(0.0, CAM_HEIGHT, 0.0),
@@ -167,6 +176,12 @@ async fn main() {
             warpset.offset_opacity = (warpset.offset_opacity - 0.1).max(0.0);
             println!("Set offset opacity to {:?}", warpset.offset_opacity);
         }
+        if is_key_pressed(KeyCode::S)
+        {
+            println!("Saving warpset...");
+            let filename = Utc::now().to_string() + ".wrp";
+            warpset.write_to_file(&filename);
+        }
 
 
         //// Handle drawing of the UI components
@@ -202,51 +217,3 @@ fn get_mouse_baseline_coords(cam: &Camera3D, baseline_size: &Vec2) -> Vec2
     mouse_w_coords/(*baseline_size)
 }
 
-fn get_start_points_from_string(mut start_points_input: String) -> Option<Vec::<Vector2<f32>>>
-{
-    let mut out = Vec::<Vector2<f32>>::new();
-
-    if start_points_input == ""
-    {
-        info!("No points provided, using default values (unit square)...");
-        out = vec![
-            Vector2::new(0.0,0.0),
-            Vector2::new(1.0,0.0),
-            Vector2::new(0.0,1.0),
-            Vector2::new(1.0,1.0)
-        ];
-    }else{
-        info!("Custom start points provided, parsing...");
-        if start_points_input.ends_with(".wrp")
-        {
-            info!("\tWarp mesh file '{}' provided, loading...", start_points_input);
-            let mut f = File::open(start_points_input.as_str()).unwrap();
-            let mut data = String::new();
-            match f.read_to_string(&mut data)
-            {
-                Ok(_) => {
-                    start_points_input = data;
-                },
-                Err(e) => {
-                    error!("Error reading file: {}", e);
-                }
-            }
-        }
-        let point_strings = start_points_input.split("),(").collect::<Vec<&str>>();
-        for point in point_strings
-        {
-            let point_str = point.trim().trim_matches(|c| c == '(' || c == ')');
-            let vals = point_str.split(",").collect::<Vec<&str>>();
-            let x = vals[0].parse::<f32>();
-            let y = vals[1].parse::<f32>();
-            if vals.len() != 2 || x.is_err() || y.is_err()
-            {
-                error!("Invalid point \"{}\", found in supplied start points argument \"{}\"",point_str, start_points_input);
-                return None;
-            }
-            out.push(Vector2::new(x.unwrap(),y.unwrap()));
-        }
-        info!("\t...done.");
-    }
-    Some(out)
-}
