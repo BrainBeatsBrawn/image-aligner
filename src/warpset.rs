@@ -25,6 +25,8 @@ pub struct WarpSet//<'a>/*<T>*/ // TODO: Probably should genericise this.
     vector_of_mat_fours: Vec<Mat4>, // Stores/chaches the Mat4s that make up each subregion when
                                     // used in drawing. Updated whenver a point is moved.
     warp_shader: Material,
+    drag_happening: bool, // Keeps track of whether a drag is happening
+
     pub offset_opacity: f32, // How opaque the offset is
 }
 
@@ -80,6 +82,8 @@ impl WarpSet
             closest_point_offset: Vector2::new(0., 0.),
             vector_of_mat_fours: Vec::<Mat4>::new(),
             warp_shader: offset_display_material,
+            drag_happening: false,
+
             offset_opacity: 1.0,
         };
         ws.update_mat_fours(); // Calculate mat4s
@@ -166,6 +170,8 @@ impl WarpSet
     // Marks the point closest to it.
     pub fn update_closest_point(&mut self, mouse_pos:&Vec2, drag_down:bool) -> ()
     {
+        self.drag_happening = drag_down; // Just keep track of this for use in rendering
+
         let mouse_pos = Vector2::<f32>::new(mouse_pos.x, mouse_pos.y);
         
         // We only care about finding the closest point if we're not dragging
@@ -333,22 +339,31 @@ impl WarpSet
         {
             vec3(v.x, UI_HEIGHT, v.y)
         }
-
-        // Draw the circles at each node
-        //for x in 0..self.mesh_size
-        //{
-        //    for y in 0..self.mesh_size
-        //    {
-        //        let p = self.warped_points[(x,y)];
-        //        //println!("point at: {:?}, {:?}", p.x, p.y);
-        //        if (x,y) == self.closest_point_index
-        //        {
-        //            draw_sphere(twoD_to_threeD(p) * point_xy_scale, point_size_scale, None, ORANGE);
-        //        }else{
-        //            draw_sphere(twoD_to_threeD(p) * point_xy_scale, point_size_scale, None, BLUE);
-        //        }
-        //    }
-        //}
+        
+        // Draw a cross at the closest node, or a triangle if it's moving
+        {
+            let p = self.warped_points[self.closest_point_index];
+            let p = twoD_to_threeD(p) * point_xy_scale;
+            let cross_point_righthanded = vec3(point_size_scale, 0., point_size_scale);
+            let cross_point_lefthanded = vec3(-point_size_scale, 0., point_size_scale);
+            if self.drag_happening
+            {
+                // Draw a circle of N sides
+                let N = 32;
+                let mut prev = vec3(point_size_scale, 0., 0.);
+                for i in 1..(N+1)
+                {
+                    let angle = (i as f32/N as f32) * std::f32::consts::PI*2.;
+                    let offset = vec3(angle.cos()*point_size_scale, 0., angle.sin()*point_size_scale);
+                    draw_line_3d(p + prev, p + offset, ORANGE);
+                    prev = offset;
+                }
+            }else{
+                // Draw a cross
+                draw_line_3d(p - cross_point_righthanded, p + cross_point_righthanded, ORANGE);
+                draw_line_3d(p - cross_point_lefthanded, p + cross_point_lefthanded, ORANGE);
+            }
+        }
         
         // Draw the lines between each circle
         for x in 0..self.grid_size
