@@ -13,6 +13,9 @@ use std::io::Read;
 mod warpset;
 use warpset::{WarpSet, get_start_points_from_string};
 
+mod track;
+use track::Track;
+
 //const FRAGMENT_SHADER: &'static str = include_str!("display_shader.frag");
 //const VERTEX_SHADER: &'static str = include_str!("display_shader.vert");
 
@@ -49,6 +52,7 @@ async fn main() {
     let mut offset_bush_segmentation_path = String::new();
     let mut start_points_input = String::new();
     let mut start_points_filepath = String::new();
+    let mut input_track_filepath = String::new();
 
     // UI properties
     //let mut ui_config = UiConfig::new();
@@ -83,8 +87,18 @@ async fn main() {
             .add_option(&["-s", "--start-points"], Store, "Comma-separated list of four points in the baseline image-space that will be used as a starting point for the warp search. Row-major order. Each point is a comma-separated pair of numbers, e.g. \"(0,0),(1,0),(0,1),(1,1)\" (including quotation marks)");
         ap.refer(&mut start_points_filepath)
             .add_option(&["-i", "--input-file"], Store, "Path to a file from a previously saved session (saving is done with the 's' key).");
+        ap.refer(&mut input_track_filepath)
+            .add_option(&["-t", "--input-track-file"], Store, "Path to a track CSV file to load.");
         ap.parse_args_or_exit();
     }
+
+    /// TODO: If a track is provided, and the option to immediately output the new file is set,
+    /// then just use a default really small image file, don't bother to load the (potentially big)
+    /// ones passed to the program.
+    
+    let track = Track::<f64>::new(&input_track_filepath);
+    //test_read(&input_track_filepath);
+    
     
     //// Configure parsed variables
     info!("Loading baseline image from {}...", baseline_image_path);
@@ -139,6 +153,11 @@ async fn main() {
 
         // Update the warpset to track actions relative to the mouse
         warpset.update_closest_point(&mouse_pos_bl, is_mouse_button_down(MouseButton::Left));
+        /// TODO: Update any track data, probably only in the regions that have been effected
+        // if the mouse is down (probably in the warpset via warpset.mouse_was_down? or something:
+        //   track.update_baseline_cache(warpset.getLastEffectedRegion);
+        /// Where getLastEffectedRegion computes the bounded 'square' that contains the effected
+        /// points.
 
 
         // Handle mouse interactions

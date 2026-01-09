@@ -28,6 +28,7 @@ dependencies = [
  "log",
  "macroquad",
  "nalgebra",
+ "num-traits",
 ]
 
 [[package]]
