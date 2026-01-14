@@ -4,14 +4,10 @@ extern crate argparse;
 use argparse::{ArgumentParser, /*StoreTrue,*/ Store};
 
 use macroquad::prelude::*;
-use na::Vector2;
-//use std::io::{stdout, stderr};
 use chrono::Utc;
-use std::fs::File;
-use std::io::Read;
 
 mod warpset;
-use warpset::{WarpSet, get_start_points_from_string};
+use warpset::WarpSet
 
 mod track;
 use track::Track;

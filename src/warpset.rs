@@ -1,5 +1,21 @@
-use log::{debug, info, warn, error, log_enabled, Level};
-use na::{Vector2,Vector3,Matrix3,Matrix4,Matrix3x4,Matrix2x4, OMatrix, Dyn, MatrixView, Matrix};
+use log::{//debug,
+          info,
+          //warn,
+          error,
+          //log_enabled,
+          //Level
+         };
+use na::{Vector2,
+         //Vector3,
+         //Matrix3,
+         //Matrix4,
+         //Matrix3x4,
+         //Matrix2x4,
+         OMatrix,
+         Dyn,
+         //MatrixView,
+         //Matrix
+        };
 use num_traits::float::Float;
 
 use macroquad::prelude::*;

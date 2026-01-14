@@ -1,4 +1,4 @@
-use log::{debug, info, warn, error};
+//use log::{debug, info, warn, error};
 use num_traits::float::Float;
 use std::str::FromStr;
 use na::Vector2;
