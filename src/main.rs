@@ -96,7 +96,7 @@ async fn main() {
     /// then just use a default really small image file, don't bother to load the (potentially big)
     /// ones passed to the program.
     
-    let track = Track::<f64>::new(&input_track_filepath);
+    let track = Track::<f64>::new(&input_track_filepath).expect("Could not load input track.");
     //test_read(&input_track_filepath);
     
     
@@ -214,6 +214,9 @@ async fn main() {
 
         warpset.draw_warped_offset_image(&offset_image, &baseline_radial_size);
         warpset.draw_ui(&baseline_size);
+
+        // Track
+        track.draw_track(&baseline_size);
 
         set_default_camera();
 

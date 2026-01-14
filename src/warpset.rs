@@ -1,5 +1,6 @@
 use log::{debug, info, warn, error, log_enabled, Level};
 use na::{Vector2,Vector3,Matrix3,Matrix4,Matrix3x4,Matrix2x4, OMatrix, Dyn, MatrixView, Matrix};
+use num_traits::float::Float;
 
 use macroquad::prelude::*;
 use crate::miniquad::{BlendState, Equation, BlendFactor, BlendValue};
@@ -340,6 +341,12 @@ impl WarpSet
         }
     }
     
+    //// Projection
+    pub fn map_point_from_offset_to_baseline<F:Float>(&self, offset_p: Vector2<F>) -> Vector2<F>
+    {
+        //Vector2::<F>::new(0., 0.)
+        offset_p
+    }
 
     //// Saving
     pub fn write_to_file(&self, path: &str) -> ()
