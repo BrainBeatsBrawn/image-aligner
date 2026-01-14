@@ -5,7 +5,7 @@ use na::Vector2;
 
 use macroquad::prelude::*;
 use csv::Reader;
-use creat::WarpSet;
+use crate::WarpSet;
 
 const TRACK_HEIGHT:f32 = 6.0;
 
@@ -15,7 +15,7 @@ pub struct Track<T:Float> //+ std::str::FromStr> // T specifies the resolution o
 {
     points: Vec::<(T, T)>, // Stores the points of this track
     //points_baselinespace: Vec::<Vector2<T>>, // Stores the points of this track, offset into baselinespace
-    display_points: Vec<vec3>, // Stores the points of this track, offset into baselinespace for
+    display_points: Vec<Vec3>, // Stores the points of this track, offset into baselinespace for
                                // display
 }
 
@@ -41,7 +41,7 @@ impl<F:Float + std::str::FromStr + std::fmt::Debug + 'static> Track<F>
             Track{
                 points: points,
                 //points_baselinespace: Vec::<Vector2<F>>::new(),
-                display_points: Vec::<vec3>::new(),
+                display_points: Vec::<Vec3>::new(),
             }
         )
     }
@@ -54,7 +54,7 @@ impl<F:Float + std::str::FromStr + std::fmt::Debug + 'static> Track<F>
     }
 
     // Actually saves the track warped 
-    pub fn save_warped_track(&self, warpset: &Warpset) -> ()
+    pub fn save_warped_track(&self, warpset: &WarpSet) -> ()
     {
     }
 

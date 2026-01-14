@@ -7,7 +7,7 @@ use macroquad::prelude::*;
 use chrono::Utc;
 
 mod warpset;
-use warpset::WarpSet
+use warpset::WarpSet;
 
 mod track;
 use track::Track;
@@ -184,12 +184,10 @@ async fn main() {
         if is_key_pressed(KeyCode::Up)
         {
             warpset.offset_opacity = (warpset.offset_opacity + 0.1).min(1.0);
-            println!("Set offset opacity to {:?}", warpset.offset_opacity);
         }
         if is_key_pressed(KeyCode::Down)
         {
             warpset.offset_opacity = (warpset.offset_opacity - 0.1).max(0.0);
-            println!("Set offset opacity to {:?}", warpset.offset_opacity);
         }
         if is_key_pressed(KeyCode::S)
         {
@@ -212,7 +210,7 @@ async fn main() {
         warpset.draw_ui(&baseline_size);
 
         // Track
-        track.draw_track(&baseline_size);
+        track.draw_track();
 
         set_default_camera();
 
