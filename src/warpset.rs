@@ -239,7 +239,7 @@ impl WarpSet
         //{
         //    return false;
         //}
-        //// Actually, we want to be able to place the points outside
+        //// Actually, we want to be able to place the points outside...
 
         let current_point = self.warped_points[index];
         let (x, y) = index;
@@ -358,10 +358,30 @@ impl WarpSet
     }
     
     //// Projection
-    pub fn map_point_from_offset_to_baseline<F:Float>(&self, offset_p: Vector2<F>) -> Vector2<F>
+    pub fn map_point_from_offset_to_baseline<F:Float + std::fmt::Debug>(&self, p: &Vector2<F>) -> Vector2<f32>
     {
-        //Vector2::<F>::new(0., 0.)
-        offset_p
+        /// TODO: Genericise the use of the input vector type
+        //let gridsize_vector_f = Vector2::<F>::new(&self.grid_size as F, &self.grid_size as F);
+        
+        //Just converting P to f32 for now
+        let p = Vector2::<f32>::new(p[0].to_f32().expect("failed to cast to f32"),
+                                    p[1].to_f32().expect("failed to cast to f32")
+                                   );
+
+        let gridsize_vector_f = Vector2::<f32>::new(self.grid_size as f32, self.grid_size as f32);
+        let subregion: Vector2<f32> = p.component_mul(&gridsize_vector_f);// Normalise the point to the subregion space
+        let subregion_id: Vector2<usize> = subregion.map(|n| n as usize); // Discard the decimals
+        let uv: Vector2<f32> = subregion - subregion_id.map(|n| n as f32); // Just the decimals
+    
+        // Then work out the baseline space points for the subregion
+        //debug!("\np: {}\nSubregion ID: {}\nbaseline_space_points: {}", p, subregion_id, self.warped_points);
+        let p1 = self.warped_points[(subregion_id.y, subregion_id.x)];
+        let p2 = self.warped_points[(subregion_id.y, subregion_id.x+1)];
+        let p3 = self.warped_points[(subregion_id.y+1, subregion_id.x)];
+        let p4 = self.warped_points[(subregion_id.y+1, subregion_id.x+1)];
+
+        // Then bilinearly interpolate the point between the four projection points
+        p1 + (p2-p1)*uv.x + (p3-p1)*uv.y + (p1-p2+p4-p3)*uv.x*uv.y
     }
 
     //// Saving

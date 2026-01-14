@@ -104,7 +104,7 @@ async fn main() {
     /// then just use a default really small image file, don't bother to load the (potentially big)
     /// ones passed to the program.
     
-    let track = Track::<f64>::new(&input_track_filepath).expect("Could not load input track.");
+    let mut track = Track::<f64>::new(&input_track_filepath).expect("Could not load input track.");
     //test_read(&input_track_filepath);
     
     
@@ -161,11 +161,14 @@ async fn main() {
 
         // Update the warpset to track actions relative to the mouse
         warpset.update_closest_point(&mouse_pos_bl, is_mouse_button_down(MouseButton::Left));
-        /// TODO: Update any track data, probably only in the regions that have been effected
+        /// TODO: Update any track data, probably only in the regions that have been effected, _if_
+        /// they've been effected.
         // if the mouse is down (probably in the warpset via warpset.mouse_was_down? or something:
         //   track.update_baseline_cache(warpset.getLastEffectedRegion);
         /// Where getLastEffectedRegion computes the bounded 'square' that contains the effected
         /// points.
+        /// TODO: Switch to (and implement) "update_display_points" so it's faster.
+        track.compute_display_points(&baseline_size, &warpset);
 
 
         // Handle mouse interactions
@@ -206,6 +209,12 @@ async fn main() {
             println!("Saving warpset...");
             let filename = Utc::now().to_string() + ".wrp";
             warpset.write_to_file(&filename);
+        }
+        if is_key_pressed(KeyCode::T)
+        {
+            println!("Saving track...");
+            let filename = input_track_filepath.clone() + "-warped.csv";
+            track.write_warped_track_to_file(&warpset, &filename);
         }
         for (keycode, opacity) in OPACITIES
         {
