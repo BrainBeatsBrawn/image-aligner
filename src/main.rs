@@ -16,6 +16,18 @@ use track::Track;
 //const VERTEX_SHADER: &'static str = include_str!("display_shader.vert");
 
 
+const OPACITIES: [(KeyCode, f32); 9] = [(KeyCode::Key1,0.1),
+                                        (KeyCode::Key2,0.2),
+                                        (KeyCode::Key3,0.3),
+                                        (KeyCode::Key4,0.4),
+                                        (KeyCode::Key5,0.5),
+                                        (KeyCode::Key6,0.6),
+                                        (KeyCode::Key7,0.7),
+                                        (KeyCode::Key8,0.8),
+                                        (KeyCode::Key9,0.9),
+                                       ];
+
+
 #[macroquad::main("Track Aligner")]
 async fn main() {
 
@@ -194,6 +206,13 @@ async fn main() {
             println!("Saving warpset...");
             let filename = Utc::now().to_string() + ".wrp";
             warpset.write_to_file(&filename);
+        }
+        for (keycode, opacity) in OPACITIES
+        {
+            if is_key_pressed(keycode)
+            {
+                warpset.offset_opacity = opacity;
+            }
         }
 
 
