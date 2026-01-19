@@ -383,6 +383,11 @@ impl WarpSet
         // Then bilinearly interpolate the point between the four projection points
         p1 + (p2-p1)*uv.x + (p3-p1)*uv.y + (p1-p2+p4-p3)*uv.x*uv.y
     }
+    
+    pub fn map_point_from_offset_to_baseline_g<F:Float + std::fmt::Debug>(&self, p: &Vector2<F>) -> Vector2<F>
+    {
+        *p
+    }
 
     //// Saving
     pub fn write_to_file(&self, path: &str) -> ()

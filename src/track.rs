@@ -20,19 +20,50 @@ pub struct Track<T:Float> //+ std::str::FromStr> // T specifies the resolution o
     //points_baselinespace: Vec::<Vector2<T>>, // Stores the points of this track, offset into baselinespace
     display_points: Vec<Vec3>, // Stores the points of this track, offset into baselinespace for
                                // display
+    baseline_top_left: Vector2::<T>, // Variables for storing the baseline in world-space
+    baseline_size: Vector2::<T>,
 }
 
-impl<F:Float + std::str::FromStr + std::fmt::Debug + 'static> Track<F>
+impl<F:Float + std::str::FromStr + std::fmt::Debug + std::default::Default + 'static + std::ops::AddAssign + std::ops::MulAssign + std::fmt::Display> Track<F>
 {
-    pub fn new(csv_path: &str) -> Option<Track<F>>
+    pub fn new(csv_path: &str, baseline_params: &str) -> Option<Track<F>>
         where <F as FromStr>::Err: std::fmt::Debug
     {
+        let baseline_params = {
+            if baseline_params == ""
+            {
+                "(0,0),(1,1)"
+            }else{
+                baseline_params
+            }
+        };
+
+        let both_points_strs = baseline_params.split("),(").collect::<Vec<&str>>();
+        //assert(both_points_str.len() > 1 && both_points_str.len() < 3, "Warning: Please provide two points to -b");
+        let mut input_as_vec = Vec::<Vector2<F>>::new();
+
+        for p in both_points_strs
+        {
+            let p = p.trim().trim_matches(|c| c == '(' || c == ')');
+            let vals = p.split(",").collect::<Vec<&str>>();
+            let x = vals[0].parse::<F>();
+            let y = vals[1].parse::<F>();
+            assert!(vals.len() == 2 && x.is_ok() && y.is_ok(), "Malformed point given as baseline realworld space coordinate");
+            input_as_vec.push(Vector2::new(x.unwrap(), y.unwrap()));
+        }
+
+        let baseline_pos = input_as_vec.get(0).expect("Not enough points given to baseline parameters input -b");
+        let baseline_size = input_as_vec.get(1).expect("Not enough points given to baseline parameters input -b");
+
+
         if csv_path == ""
         {
             println!("No track filepath provided.");
             return Some(Track{
                 points: Vec::<Vector2::<F>>::new(),
-                display_points: Vec::<Vec3>::new()
+                display_points: Vec::<Vec3>::new(),
+                baseline_top_left: *baseline_pos,
+                baseline_size: *baseline_size,
             });
         }
 
@@ -51,8 +82,9 @@ impl<F:Float + std::str::FromStr + std::fmt::Debug + 'static> Track<F>
         Some(
             Track{
                 points: points,
-                //points_baselinespace: Vec::<Vector2<F>>::new(),
                 display_points: Vec::<Vec3>::new(),
+                baseline_top_left: *baseline_pos,
+                baseline_size: *baseline_size,
             }
         )
     }
@@ -80,7 +112,9 @@ impl<F:Float + std::str::FromStr + std::fmt::Debug + 'static> Track<F>
         let mut file = File::create(path).unwrap();
         for p in &self.points
         {
-            let baseline_p = warpset.map_point_from_offset_to_baseline(&p);
+            //let baseline_p = warpset.map_point_from_offset_to_baseline(&p);
+            let baseline_p = warpset.map_point_from_offset_to_baseline_g(&p);
+            let world_p = (baseline_p * self.baseline_size) + self.baseline_top_left;
             file.write(&format!("{},{}\n", baseline_p.x, baseline_p.y).as_bytes()).unwrap();
         }
         println!("Warped track file written!");

@@ -61,6 +61,7 @@ async fn main() {
     let mut start_points_input = String::new();
     let mut start_points_filepath = String::new();
     let mut input_track_filepath = String::new();
+    let mut baseline_realworld_params = String::new();
 
     // UI properties
     //let mut ui_config = UiConfig::new();
@@ -97,6 +98,8 @@ async fn main() {
             .add_option(&["-i", "--input-file"], Store, "Path to a file from a previously saved session (saving is done with the 's' key).");
         ap.refer(&mut input_track_filepath)
             .add_option(&["-t", "--input-track-file"], Store, "Path to a track CSV file to load.");
+        ap.refer(&mut baseline_realworld_params)
+            .add_option(&["-b", "--baseline-realworld-params"], Store, "Position of top-left and bottom-right point of the baseline image in real-world space. Presented as two pairs of bracket-noted coordinates, e.g. \"(0,0),(1,1)\"");
         ap.parse_args_or_exit();
     }
 
@@ -104,7 +107,7 @@ async fn main() {
     /// then just use a default really small image file, don't bother to load the (potentially big)
     /// ones passed to the program.
     
-    let mut track = Track::<f64>::new(&input_track_filepath).expect("Input track had malformed numbers.\n");
+    let mut track = Track::<f64>::new(&input_track_filepath, &baseline_realworld_params).expect("Input track had malformed numbers.\n");
     
     //// Configure parsed variables
     info!("Loading baseline image from {}...", baseline_image_path);
