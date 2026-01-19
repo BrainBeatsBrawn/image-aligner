@@ -31,17 +31,17 @@ const WARPMESH_STACK_WIDTH:f32 = 1.0;
 
 
 #[derive(Debug, Clone)]
-pub struct WarpSet//<'a>/*<T>*/ // TODO: Probably should genericise this.
+pub struct WarpSet
 {
     // Contains an entire N-subregion warp set to represent one space (offset space) in a different
     // space (baseline space). This is done by storing a list of subregions in baseline space that
     // refere to an equally-distributed square of subregions in offset space.
-    warped_points: OMatrix<Vector2<f32>, Dyn, Dyn>, // Points in baseline-space that correspond to a grid of uniform points in offset space
+    warped_points: OMatrix<Vector2<f64>, Dyn, Dyn>, // Points in baseline-space that correspond to a grid of uniform points in offset space
     mesh_size: usize, // Stores the size of the mesh of points that makes up the region grid, only touched on creation
     grid_size: usize, // Stores the size of the grid of regions (note: this will be 1 less than the mesh_size), only touched on creation
     subregion_count: f32, // Stores the number of subregions (aka grid_size^2), only touched on creation
     closest_point_index: (usize, usize), // Stores the index of the point currently closest to the cursor
-    closest_point_offset: Vector2<f32>,  // stores the offset from the mouse to the closest point
+    closest_point_offset: Vector2<f64>,  // stores the offset from the mouse to the closest point
     vector_of_mat_fours: Vec<Mat4>, // Stores/chaches the Mat4s that make up each subregion when
                                     // used in drawing. Updated whenver a point is moved.
     warp_shader: Material,
@@ -60,8 +60,7 @@ impl WarpSet
 
     // Constructor that just takes the mesh of points, generates auxillary variables
     #[inline(always)]
-    //fn from_OMatrix<'a>(warped_points: OMatrix<Vector2<f32>, Dyn, Dyn>, offset_image: &'a Texture2D) -> WarpSet<'a>
-    fn from_OMatrix(warped_points: OMatrix<Vector2<f32>, Dyn, Dyn>, offset_image: & Texture2D) -> WarpSet
+    fn from_OMatrix(warped_points: OMatrix<Vector2<f64>, Dyn, Dyn>, offset_image: & Texture2D) -> WarpSet
     {
         // Create the offset warp display shader
         let offset_display_material = load_material(
@@ -111,7 +110,7 @@ impl WarpSet
     }
     
     // Creates a new warp set from a set of warp points given in row-major order
-    pub fn new(warped_points: &Vec<Vector2<f32>>, offset_image: & Texture2D) -> Option<WarpSet>
+    pub fn new(warped_points: &Vec<Vector2<f64>>, offset_image: & Texture2D) -> Option<WarpSet>
     {
         // Make sure that the given point list is the correct length (aka a square number)
         let point_count = warped_points.len();
@@ -124,14 +123,14 @@ impl WarpSet
         let mesh_size = (point_count as f32).sqrt() as usize;
         
         // Create the list of points in column major order
-        let baseline_space_points_column_major: Vec<Vector2<f32>> = 
+        let baseline_space_points_column_major: Vec<Vector2<f64>> = 
             (0..mesh_size).map(|i| (0..mesh_size)
             .map(|o| warped_points[i + o * mesh_size])
-            .collect::<Vec<Vector2<f32>>>()).flatten().collect();
+            .collect::<Vec<Vector2<f64>>>()).flatten().collect();
 
         Some(
             Self::from_OMatrix(
-                OMatrix::<Vector2<f32>, Dyn, Dyn>::from_vec(mesh_size, mesh_size, baseline_space_points_column_major),
+                OMatrix::<Vector2<f64>, Dyn, Dyn>::from_vec(mesh_size, mesh_size, baseline_space_points_column_major),
                 offset_image
                 )
             )
@@ -150,7 +149,7 @@ impl WarpSet
     pub fn subdivide(&mut self) -> ()
     {
         let new_mesh_size = self.mesh_size * 2 - 1;
-        let mut new_baseline_space_points = OMatrix::<Vector2<f32>, Dyn, Dyn>::zeros(new_mesh_size, new_mesh_size);
+        let mut new_baseline_space_points = OMatrix::<Vector2<f64>, Dyn, Dyn>::zeros(new_mesh_size, new_mesh_size);
 
         // Populate the current points into the new matrix
         for y in 0..self.mesh_size
@@ -201,7 +200,7 @@ impl WarpSet
     {
         self.drag_happening = drag_down; // Just keep track of this for use in rendering
 
-        let mouse_pos = Vector2::<f32>::new(mouse_pos.x, mouse_pos.y);
+        let mouse_pos = Vector2::<f64>::new(mouse_pos.x.into(), mouse_pos.y.into());
         
         // We only care about finding the closest point if we're not dragging
         if drag_down
@@ -212,7 +211,7 @@ impl WarpSet
         }else{
 
             // And if we aren't dragging, then we can find it
-            let mut closest_distance = f32::MAX;
+            let mut closest_distance = f64::MAX;
             for x in 0..self.mesh_size
             {
                 for y in 0..self.mesh_size
@@ -232,7 +231,7 @@ impl WarpSet
     }
 
     // Takes a point and attempts to move it, ensures convexity
-    fn set_and_check_new_point_pos(&mut self, index:(usize, usize), new_pos:Vector2::<f32>) -> bool
+    fn set_and_check_new_point_pos(&mut self, index:(usize, usize), new_pos:Vector2::<f64>) -> bool
     {
         // Quit out if we're trying to drag the points outside of the baseline region.
         //if new_pos.x < 0. || new_pos.x > 1. || new_pos.y < 0. || new_pos.y > 1.
@@ -289,7 +288,7 @@ impl WarpSet
     {
 
         let point_indices: [(i32, i32); 4] = [p1, p2, p3, p4];
-        let mut points: [Vector2::<f32>; 4] = [Default::default(); 4];
+        let mut points: [Vector2::<f64>; 4] = [Default::default(); 4];
         
         // First check if any point is out of bounds.
         // If it is, then this quad is actually just a point or a line and therefor convex by default.
@@ -347,10 +346,10 @@ impl WarpSet
                 ];
                 self.vector_of_mat_fours.push(
                     Mat4::from_cols_slice(&[
-                    bsp[(y,x)].x,     bsp[(y,x)].y,     region_points[0].x, region_points[0].y,
-                    bsp[(y,x+1)].x,   bsp[(y,x+1)].y,   region_points[1].x, region_points[1].y,
-                    bsp[(y+1,x)].x,   bsp[(y+1,x)].y,   region_points[2].x, region_points[2].y,
-                    bsp[(y+1,x+1)].x, bsp[(y+1,x+1)].y, region_points[3].x, region_points[3].y
+                    bsp[(y,x)].x as f32,     bsp[(y,x)].y as f32,     region_points[0].x as f32, region_points[0].y as f32,
+                    bsp[(y,x+1)].x as f32,   bsp[(y,x+1)].y as f32,   region_points[1].x as f32, region_points[1].y as f32,
+                    bsp[(y+1,x)].x as f32,   bsp[(y+1,x)].y as f32,   region_points[2].x as f32, region_points[2].y as f32,
+                    bsp[(y+1,x+1)].x as f32, bsp[(y+1,x+1)].y as f32, region_points[3].x as f32, region_points[3].y as f32
                     ])
                 );
             }
@@ -358,20 +357,19 @@ impl WarpSet
     }
     
     //// Projection
-    pub fn map_point_from_offset_to_baseline<F:Float + std::fmt::Debug>(&self, p: &Vector2<F>) -> Vector2<f32>
+    pub fn map_point_from_offset_to_baseline<F:Float + std::fmt::Debug>(&self, p: &Vector2<F>) -> Vector2<f64>
     {
-        /// TODO: Genericise the use of the input vector type
+        // TODO: Genericise the use of the input vector type
         //let gridsize_vector_f = Vector2::<F>::new(&self.grid_size as F, &self.grid_size as F);
         
-        //Just converting P to f32 for now
-        let p = Vector2::<f32>::new(p[0].to_f32().expect("failed to cast to f32"),
-                                    p[1].to_f32().expect("failed to cast to f32")
+        let p = Vector2::<f64>::new(p[0].to_f64().expect("failed to cast to f64"),
+                                    p[1].to_f64().expect("failed to cast to f64")
                                    );
 
-        let gridsize_vector_f = Vector2::<f32>::new(self.grid_size as f32, self.grid_size as f32);
-        let subregion: Vector2<f32> = p.component_mul(&gridsize_vector_f);// Normalise the point to the subregion space
+        let gridsize_vector_f = Vector2::<f64>::new(self.grid_size as f64, self.grid_size as f64);
+        let subregion: Vector2<f64> = p.component_mul(&gridsize_vector_f);// Normalise the point to the subregion space
         let subregion_id: Vector2<usize> = subregion.map(|n| n as usize); // Discard the decimals
-        let uv: Vector2<f32> = subregion - subregion_id.map(|n| n as f32); // Just the decimals
+        let uv: Vector2<f64> = subregion - subregion_id.map(|n| n as f64); // Just the decimals
     
         // Then work out the baseline space points for the subregion
         //debug!("\np: {}\nSubregion ID: {}\nbaseline_space_points: {}", p, subregion_id, self.warped_points);
@@ -406,9 +404,9 @@ impl WarpSet
         let point_xy_scale = vec3(baseline_size.x, baseline_size.y, 1.);
         let point_size_scale = 0.05/self.mesh_size as f32;
 
-        fn twoD_to_threeD(v: Vector2<f32>) -> Vec3
+        fn twoD_to_threeD(v: Vector2<f64>) -> Vec3
         {
-            vec3(v.x, UI_HEIGHT, v.y)
+            vec3(v.x as f32, UI_HEIGHT, v.y as f32)
         }
         
         // Draw a cross at the closest node, or a triangle if it's moving
@@ -492,9 +490,9 @@ impl WarpSet
     }
 }
 
-pub fn get_start_points_from_string(mut start_points_input: String) -> Option<Vec::<Vector2<f32>>>
+pub fn get_start_points_from_string(mut start_points_input: String) -> Option<Vec::<Vector2<f64>>>
 {
-    let mut out = Vec::<Vector2<f32>>::new();
+    let mut out = Vec::<Vector2<f64>>::new();
 
     if start_points_input == ""
     {
@@ -527,8 +525,8 @@ pub fn get_start_points_from_string(mut start_points_input: String) -> Option<Ve
         {
             let point_str = point.trim().trim_matches(|c| c == '(' || c == ')');
             let vals = point_str.split(",").collect::<Vec<&str>>();
-            let x = vals[0].parse::<f32>();
-            let y = vals[1].parse::<f32>();
+            let x = vals[0].parse::<f64>();
+            let y = vals[1].parse::<f64>();
             if vals.len() != 2 || x.is_err() || y.is_err()
             {
                 error!("Invalid point \"{}\", found in supplied start points argument \"{}\"",point_str, start_points_input);

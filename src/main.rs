@@ -1,3 +1,5 @@
+#![allow(unused_doc_comments)]
+
 extern crate nalgebra as na;
 extern crate argparse;
 
@@ -104,22 +106,22 @@ async fn main() {
     /// then just use a default really small image file, don't bother to load the (potentially big)
     /// ones passed to the program.
     
-    let mut track = Track::<f64>::new(&input_track_filepath).expect("Input track had malformed numbers.\n");
+    let mut track = Track::new(&input_track_filepath).expect("Input track had malformed numbers.\n");
     
     //// Configure parsed variables
     info!("Loading baseline image from {}...", baseline_image_path);
     let baseline_image: Texture2D = load_texture(baseline_image_path.as_str()).await.unwrap();
     info!("\t...done.");
     info!("Loading baseline bush segmentation image from {}...", baseline_bush_segmentation_path);
-    let baseline_segmentation_image: Texture2D = load_texture(baseline_bush_segmentation_path.as_str()).await.unwrap();
-    let baseline_segmentation_data: Image = baseline_segmentation_image.get_texture_data();
+    //let baseline_segmentation_image: Texture2D = load_texture(baseline_bush_segmentation_path.as_str()).await.unwrap();
+    //let baseline_segmentation_data: Image = baseline_segmentation_image.get_texture_data();
     info!("\t...done.");
     info!("Loading offset image from {}...", offset_image_path);
     let offset_image: Texture2D = load_texture(offset_image_path.as_str()).await.unwrap();
     info!("\t...done.");
     info!("Loading offset bush segmentation image from {}...", offset_bush_segmentation_path);
-    let offset_segmentation_image: Texture2D = load_texture(offset_bush_segmentation_path.as_str()).await.unwrap();
-    let offset_segmentation_data: Image = offset_segmentation_image.get_texture_data();
+    //let offset_segmentation_image: Texture2D = load_texture(offset_bush_segmentation_path.as_str()).await.unwrap();
+    //let offset_segmentation_data: Image = offset_segmentation_image.get_texture_data();
     info!("\t...done.");
     let start_points = warpset::get_start_points_from_string(start_points_input).expect("Start points malformed.");
     info!("Start points provided: {:?}", start_points);
@@ -153,7 +155,7 @@ async fn main() {
         set_camera(&camera);
 
         // Draw a point at the mouse for debug purposes
-        let mouse_pos_w = get_mouse_wcoords(&camera);
+        //let mouse_pos_w = get_mouse_wcoords(&camera);
         //draw_sphere(vec3(mouse_pos_w.x, MOUSE_HEIGHT, mouse_pos_w.y), 0.05, None, YELLOW);
         let mouse_pos_bl = get_mouse_baseline_coords(&camera, &baseline_size);
 
