@@ -4,6 +4,7 @@ extern crate nalgebra as na;
 extern crate argparse;
 
 use argparse::{ArgumentParser, /*StoreTrue,*/ Store};
+use std::time::SystemTime;
 
 use macroquad::prelude::*;
 use chrono::Utc;
@@ -148,6 +149,7 @@ async fn main() {
     };
     
 
+    let mut last_time = SystemTime::now();
     loop {
         clear_background(LIGHTGRAY);
 
@@ -241,7 +243,12 @@ async fn main() {
 
         set_default_camera();
 
-        // Stuff can be drawn here in default-land if needed.
+        // Draw the fps
+        let now = SystemTime::now();
+        let diff = now.duration_since(last_time).expect("cannot calculate fps.").as_nanos();
+        let fps = 1_000_000_000 / diff;
+        last_time = now;
+        draw_text(format!("FPS: {fps}").as_str(), 5., 12., 20.0, RED);
 
         next_frame().await
     }
