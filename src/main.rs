@@ -150,6 +150,7 @@ async fn main() {
     
 
     let mut last_time = SystemTime::now();
+    track.compute_display_points(&baseline_size, &warpset);
     loop {
         clear_background(LIGHTGRAY);
 
@@ -169,7 +170,8 @@ async fn main() {
         /// Where getLastEffectedRegion computes the bounded 'square' that contains the effected
         /// points.
         /// TODO: Switch to (and implement) "update_display_points" so it's faster.
-        track.compute_display_points(&baseline_size, &warpset);
+        //track.compute_display_points(&baseline_size, &warpset);
+        track.update_display_points(&baseline_size, &warpset);
 
 
         // Handle mouse interactions

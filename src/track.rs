@@ -65,8 +65,22 @@ impl Track
     }
     // Computes and updates *only* the display points that have been
     // effected by the last move in the WarpSet.
-    pub fn update_display_points(&self, basline_size: &Vec2, warpset: &WarpSet) -> ()
+    pub fn update_display_points(&mut self, baseline_size: &Vec2, warpset: &WarpSet) -> ()
     {
+        //for p in &self.display_points
+        for i in 0..self.points.len()
+        {
+            let point = self.points[i];
+            if !warpset._has_point_been_warped(point) { continue }; // Skip if the point is not
+                                                                      // in the zone that's been
+                                                                      // warped
+
+            let baseline_p = warpset.map_point_from_offset_to_baseline(&point);
+            self.display_points[i] = Vec3::new(baseline_p.x as f32 * baseline_size.x,
+                                               TRACK_HEIGHT,
+                                               baseline_p.y as f32 * baseline_size.y);
+                                    
+        }
     }
 
     // Actually saves the track warped 

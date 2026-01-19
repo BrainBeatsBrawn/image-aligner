@@ -232,6 +232,25 @@ impl WarpSet
         }
     }
 
+    pub fn has_point_been_warped(&self, v: Vector2::<f64>) -> bool
+    {
+        if !self.drag_happening
+        {
+            return false;
+        }
+
+        let gridsize_vector_f = Vector2::<f64>::new(self.grid_size as f64, self.grid_size as f64);
+        let subregion: Vector2<f64> = v.component_mul(&gridsize_vector_f);// Normalise the point to the subregion space
+        let subregion_id: Vector2<usize> = subregion.map(|n| n as usize); // Discard the decimals
+
+        // If any of the points in the region that effects this projection point are the closest
+        // point (that has been moved), then this projection point has been warped
+        (subregion_id.y, subregion_id.x) == self.closest_point_index ||
+        (subregion_id.y, subregion_id.x+1) == self.closest_point_index ||
+        (subregion_id.y+1, subregion_id.x) == self.closest_point_index ||
+        (subregion_id.y+1, subregion_id.x+1) == self.closest_point_index
+    }
+
     // Takes a point and attempts to move it, ensures convexity
     fn set_and_check_new_point_pos(&mut self, index:(usize, usize), new_pos:Vector2::<f64>) -> bool
     {
