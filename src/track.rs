@@ -29,8 +29,11 @@ impl<F:Float + std::str::FromStr + std::fmt::Debug + 'static> Track<F>
     {
         if csv_path == ""
         {
-            println!("EGGGS!");
-            return None;
+            println!("No track filepath provided.");
+            return Some(Track{
+                points: Vec::<Vector2::<F>>::new(),
+                display_points: Vec::<Vec3>::new()
+            });
         }
 
         let mut reader = Reader::from_path(csv_path).expect("Oh no there's no file!");
