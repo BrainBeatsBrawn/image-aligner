@@ -104,8 +104,9 @@ async fn main() {
     /// then just use a default really small image file, don't bother to load the (potentially big)
     /// ones passed to the program.
     
-    let mut track = Track::<f64>::new(&input_track_filepath).expect("Could not load input track.");
+    let mut track = Track::<f64>::new(&input_track_filepath).expect("Could not load input track.\n");
     //test_read(&input_track_filepath);
+    println!("Track: {:?}", track);
     
     
     //// Configure parsed variables

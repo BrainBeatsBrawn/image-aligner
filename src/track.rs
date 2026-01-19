@@ -29,6 +29,7 @@ impl<F:Float + std::str::FromStr + std::fmt::Debug + 'static> Track<F>
     {
         if csv_path == ""
         {
+            println!("EGGGS!");
             return None;
         }
 
