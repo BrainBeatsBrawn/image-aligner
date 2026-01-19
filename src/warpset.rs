@@ -187,10 +187,12 @@ impl WarpSet
     }
 
     //// General getters/setters
+    /*
     pub fn get_grid_size(&self) -> usize
     {
         self.grid_size
     }
+    */
 
 
     //// Points UI
@@ -240,7 +242,6 @@ impl WarpSet
         //}
         //// Actually, we want to be able to place the points outside...
 
-        let current_point = self.warped_points[index];
         let (x, y) = index;
         let x = x as i32;
         let y = y as i32;
@@ -404,7 +405,7 @@ impl WarpSet
         let point_xy_scale = vec3(baseline_size.x, baseline_size.y, 1.);
         let point_size_scale = 0.05/self.mesh_size as f32;
 
-        fn twoD_to_threeD(v: Vector2<f64>) -> Vec3
+        fn two_d_to_three_d(v: Vector2<f64>) -> Vec3
         {
             vec3(v.x as f32, UI_HEIGHT, v.y as f32)
         }
@@ -412,17 +413,17 @@ impl WarpSet
         // Draw a cross at the closest node, or a triangle if it's moving
         {
             let p = self.warped_points[self.closest_point_index];
-            let p = twoD_to_threeD(p) * point_xy_scale;
+            let p = two_d_to_three_d(p) * point_xy_scale;
             let cross_point_righthanded = vec3(point_size_scale, 0., point_size_scale);
             let cross_point_lefthanded = vec3(-point_size_scale, 0., point_size_scale);
             if self.drag_happening
             {
                 // Draw a circle of N sides
-                let N = 32;
+                let n = 32;
                 let mut prev = vec3(point_size_scale, 0., 0.);
-                for i in 1..(N+1)
+                for i in 1..(n+1)
                 {
-                    let angle = (i as f32/N as f32) * std::f32::consts::PI*2.;
+                    let angle = (i as f32/n as f32) * std::f32::consts::PI*2.;
                     let offset = vec3(angle.cos()*point_size_scale, 0., angle.sin()*point_size_scale);
                     draw_line_3d(p + prev, p + offset, ORANGE);
                     prev = offset;
@@ -439,9 +440,9 @@ impl WarpSet
         {
             for y in 0..self.grid_size
             {
-                let p0 = twoD_to_threeD(self.warped_points[(x,y)]);
-                let p1 = twoD_to_threeD(self.warped_points[(x+1,y)]);
-                let p2 = twoD_to_threeD(self.warped_points[(x,y+1)]);
+                let p0 = two_d_to_three_d(self.warped_points[(x,y)]);
+                let p1 = two_d_to_three_d(self.warped_points[(x+1,y)]);
+                let p2 = two_d_to_three_d(self.warped_points[(x,y+1)]);
                 draw_line_3d(p0 * point_xy_scale,p1 * point_xy_scale,RED);
                 draw_line_3d(p0 * point_xy_scale,p2 * point_xy_scale,RED);
             }
@@ -449,14 +450,14 @@ impl WarpSet
         // Draw final lines
         for x in 0..self.grid_size
         {
-            let p0 = twoD_to_threeD(self.warped_points[(x,self.grid_size)]);
-            let p1 = twoD_to_threeD(self.warped_points[(x+1,self.grid_size)]);
+            let p0 = two_d_to_three_d(self.warped_points[(x,self.grid_size)]);
+            let p1 = two_d_to_three_d(self.warped_points[(x+1,self.grid_size)]);
             draw_line_3d(p0 * point_xy_scale,p1 * point_xy_scale,RED);
         }
         for y in 0..self.grid_size
         {
-            let p0 = twoD_to_threeD(self.warped_points[(self.grid_size,y)]);
-            let p1 = twoD_to_threeD(self.warped_points[(self.grid_size,y+1)]);
+            let p0 = two_d_to_three_d(self.warped_points[(self.grid_size,y)]);
+            let p1 = two_d_to_three_d(self.warped_points[(self.grid_size,y+1)]);
             draw_line_3d(p0 * point_xy_scale,p1 * point_xy_scale,RED);
         }
     }

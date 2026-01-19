@@ -95,15 +95,3 @@ impl Track
         }
     }
 }
-
-
-pub fn test_read(path: &str) -> ()
-{
-    //let mut reader = Reader::from_path("data/big-files/mosaic/Ant03R01.csv").expect("Oh no there's no file!");
-    let mut reader = Reader::from_path(path).expect("Oh no there's no file!");
-    for result in reader.records()
-    {
-        let record = result.expect("Failure to unwrap malformed CSV file line.");
-        println!("Here's the line: {:?}", record);
-    }
-}

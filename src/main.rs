@@ -48,7 +48,6 @@ async fn main() {
     const SCROLL_SPEED: f32 = 0.2; // 20% size
     const MOVE_SPEED: f32 = 1.0; // scale for movement
     const CAM_HEIGHT:f32 = 10.0;
-    const MOUSE_HEIGHT: f32 = 9.0;
     const BASELINE_HEIGHT: f32 = 0.0;
 
     env_logger::init();
