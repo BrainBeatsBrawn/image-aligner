@@ -71,7 +71,7 @@ impl Track
         for i in 0..self.points.len()
         {
             let point = self.points[i];
-            if !warpset._has_point_been_warped(point) { continue }; // Skip if the point is not
+            if !warpset.has_point_been_warped(point) { continue }; // Skip if the point is not
                                                                       // in the zone that's been
                                                                       // warped
 
