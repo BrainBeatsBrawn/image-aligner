@@ -13,29 +13,29 @@ The program can be run by executing the built executable found at `target/releas
 
 ```
 Usage:
-  target/debug/track-aligner [OPTIONS] BASELINE\_IMAGE BASELINE\_SEG OFFSET\_IMAGE OFFSET\_IMAGE\_SEG
+  target/debug/track-aligner [OPTIONS] BASELINE_IMAGE BASELINE_SEG OFFSET_IMAGE OFFSET_IMAGE_SEG
 
 Aligns two images through a multi-patch warp. Press 'h' for hotkeys.
 
 Positional arguments:
-  BASELINE\_IMAGE        Path to the baseline image (the one that will not be
+  BASELINE_IMAGE        Path to the baseline image (the one that will not be
                         warped)
-  BASELINE\_SEG          Path to the baseline bush segmentation image
-  OFFSET\_IMAGE          Path to the offset image (the one that will be warped)
-  OFFSET\_IMAGE\_SEG      Path to the offset bush segmentation image
+  BASELINE_SEG          Path to the baseline bush segmentation image
+  OFFSET_IMAGE          Path to the offset image (the one that will be warped)
+  OFFSET_IMAGE_SEG      Path to the offset bush segmentation image
 
 Optional arguments:
   -h,--help             Show this help message and exit
-  -s,--start-points START\_POINTS
+  -s,--start-points START_POINTS
                         Comma-separated list of four points in the baseline
                         image-space that will be used as a starting point for
                         the warp search. Row-major order. Each point is a
                         comma-separated pair of numbers, e.g.
                         "(0,0),(1,0),(0,1),(1,1)" (including quotation marks)
-  -i,--input-file INPUT\_FILE
+  -i,--input-file INPUT_FILE
                         Path to a file from a previously saved session (saving
                         is done with the 's' key).
-  -t,--input-track-file INPUT\_TRACK\_FILE
+  -t,--input-track-file INPUT_TRACK_FILE
                         Path to a track CSV file to load.
   -p,--process-points   If enabled, the program simply immediately processes
                         the track supplied with -t against the supplied
