@@ -3,7 +3,7 @@
 extern crate nalgebra as na;
 extern crate argparse;
 
-use argparse::{ArgumentParser, /*StoreTrue,*/ Store};
+use argparse::{ArgumentParser, StoreTrue, Store};
 use std::time::SystemTime;
 
 use macroquad::prelude::*;
@@ -63,6 +63,7 @@ async fn main() {
     let mut start_points_input = String::new();
     let mut start_points_filepath = String::new();
     let mut input_track_filepath = String::new();
+    let mut process_points_and_exit = false;
 
     // UI properties
     //let mut ui_config = UiConfig::new();
@@ -99,14 +100,30 @@ async fn main() {
             .add_option(&["-i", "--input-file"], Store, "Path to a file from a previously saved session (saving is done with the 's' key).");
         ap.refer(&mut input_track_filepath)
             .add_option(&["-t", "--input-track-file"], Store, "Path to a track CSV file to load.");
+        ap.refer(&mut process_points_and_exit)
+            .add_option(&["-p", "--process-points"], StoreTrue, "If enabled, the program simply immediately processes the track supplied with -t against the supplied pointset and then closes.");
         ap.parse_args_or_exit();
     }
-
-    /// TODO: If a track is provided, and the option to immediately output the new file is set,
-    /// then just use a default really small image file, don't bother to load the (potentially big)
-    /// ones passed to the program.
     
     let mut track = Track::new(&input_track_filepath).expect("Input track had malformed numbers.\n");
+    let start_points = warpset::get_start_points_from_string(start_points_input).expect("Start points malformed.");
+    info!("Start points provided: {:?}", start_points);
+
+    // If we're just going to process and exit, then do that now.
+    if process_points_and_exit
+    {
+        info!("Warping input track...");
+        // Create placeholder image that doesn't take a millenia to load
+        let placeholder_img: Texture2D = Texture2D::empty();
+        let mut warpset;
+        if start_points_filepath.trim() == "" {
+            warpset = WarpSet::new(&start_points, &placeholder_img).expect("Failed to create warpset from start points.");
+        }else{
+            warpset = WarpSet::from_file(&start_points_filepath, &placeholder_img).expect("Failed to create warpset from file.");
+        };
+        save_warped_track(&track, &warpset, &input_track_filepath);
+        return;
+    }
     
     //// Configure parsed variables
     info!("Loading baseline image from {}...", baseline_image_path);
@@ -123,8 +140,6 @@ async fn main() {
     //let offset_segmentation_image: Texture2D = load_texture(offset_bush_segmentation_path.as_str()).await.unwrap();
     //let offset_segmentation_data: Image = offset_segmentation_image.get_texture_data();
     info!("\t...done.");
-    let start_points = warpset::get_start_points_from_string(start_points_input).expect("Start points malformed.");
-    info!("Start points provided: {:?}", start_points);
 
 
     //// Begin processing
@@ -215,9 +230,7 @@ async fn main() {
         }
         if is_key_pressed(KeyCode::T)
         {
-            println!("Saving track...");
-            let filename = input_track_filepath.clone() + "-warped.csv";
-            track.write_warped_track_to_file(&warpset, &filename);
+            save_warped_track(&track, &warpset, &input_track_filepath);
         }
         for (keycode, opacity) in OPACITIES
         {
@@ -269,3 +282,11 @@ fn get_mouse_baseline_coords(cam: &Camera3D, baseline_size: &Vec2) -> Vec2
     mouse_w_coords/(*baseline_size)
 }
 
+fn save_warped_track(track: &Track, warpset: &WarpSet, input_track_filepath: &str)
+{
+    println!("Saving track...");
+    let filename = input_track_filepath.clone().to_owned();
+    let filename = filename.replace(".csv", "-warped.csv");
+    track.write_warped_track_to_file(&warpset, &filename);
+    println!("Track saved!");
+}
