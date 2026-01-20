@@ -166,6 +166,7 @@ async fn main() {
 
     let mut last_time = SystemTime::now();
     track.compute_display_points(&baseline_size, &warpset);
+    let mut draw_mesh = true;
     loop {
         clear_background(LIGHTGRAY);
 
@@ -239,6 +240,10 @@ async fn main() {
                 warpset.offset_opacity = opacity;
             }
         }
+        if is_key_pressed(KeyCode::M)
+        {
+            draw_mesh = !draw_mesh;
+        }
 
 
         //// Handle drawing of the UI components
@@ -247,11 +252,14 @@ async fn main() {
                    baseline_radial_size, Some(&baseline_image),
                    WHITE);
         
-        // grid
+        // background grid
         draw_grid(20, 1., BLACK, GRAY);
 
         warpset.draw_warped_offset_image(&offset_image, &baseline_radial_size);
-        warpset.draw_ui(&baseline_size);
+        if draw_mesh
+        {
+            warpset.draw_ui(&baseline_size);
+        }
 
         // Track
         track.draw_track();

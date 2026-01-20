@@ -88,7 +88,7 @@ impl WarpSet
             }
         ).unwrap();
         
-        offset_display_material.set_texture("offsetImage", offset_image.clone());
+        offset_display_material.set_texture("offsetImage", offset_image.weak_clone());
 
         let mesh_size = warped_points.shape().0;
         let grid_size = mesh_size-1;
