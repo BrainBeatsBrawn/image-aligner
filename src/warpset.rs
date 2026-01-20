@@ -60,6 +60,7 @@ impl WarpSet
 
     // Constructor that just takes the mesh of points, generates auxillary variables
     #[inline(always)]
+    #[allow(non_snake_case)]
     fn from_OMatrix(warped_points: OMatrix<Vector2<f64>, Dyn, Dyn>, offset_image: & Texture2D) -> WarpSet
     {
         // Create the offset warp display shader
@@ -481,7 +482,7 @@ impl WarpSet
         }
     }
 
-    pub fn draw_warped_offset_image(&self, offset_image: &Texture2D, baseline_plane_size: &Vec2) -> ()
+    pub fn draw_warped_offset_image(&self, baseline_plane_size: &Vec2) -> ()
     {
         // The reference to this texture should probably be set somewhere else just once so it's
         // not duplicating it every time, but that's a lot of effort atm.

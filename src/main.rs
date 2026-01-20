@@ -29,6 +29,18 @@ const OPACITIES: [(KeyCode, f32); 9] = [(KeyCode::Key1,0.1),
                                         (KeyCode::Key8,0.8),
                                         (KeyCode::Key9,0.9),
                                        ];
+const HOTKEYS_HELP: &str ="
+     Hotkeys
+  -------------------------------------------------------------------
+  q       - Quit.
+  tab     - Subdivide the current warp mesh.
+  up/down - Increase/decrease opacity of the offset image.
+  1-9     - set the opacity of the offset image to decimal divisions.
+  s       - Save the current warp mesh.
+  t       - Save the loaded warpset in baseline imagespace.
+  m       - Show/hide the warpmesh.
+  h       - Display this text.
+";
 
 
 #[macroquad::main("Track Aligner")]
@@ -81,7 +93,7 @@ async fn main() {
         //                   tab - subdivide the current warp mesh.\n
         //                   Click and drag to move around, scroll to zoom in and out.\n
         //                   ");
-        ap.set_description("A PROGRAM!");
+        ap.set_description("Aligns two images through a multi-patch warp. Press 'h' for hotkeys.");
         ap.refer(&mut baseline_image_path)
             .add_argument("BASELINE_IMAGE", Store, "Path to the baseline image (the one that will not be warped)")
             .required();
@@ -115,7 +127,7 @@ async fn main() {
         info!("Warping input track...");
         // Create placeholder image that doesn't take a millenia to load
         let placeholder_img: Texture2D = Texture2D::empty();
-        let mut warpset;
+        let warpset;
         if start_points_filepath.trim() == "" {
             warpset = WarpSet::new(&start_points, &placeholder_img).expect("Failed to create warpset from start points.");
         }else{
@@ -129,17 +141,17 @@ async fn main() {
     info!("Loading baseline image from {}...", baseline_image_path);
     let baseline_image: Texture2D = load_texture(baseline_image_path.as_str()).await.unwrap();
     info!("\t...done.");
-    info!("Loading baseline bush segmentation image from {}...", baseline_bush_segmentation_path);
+    //info!("Loading baseline bush segmentation image from {}...", baseline_bush_segmentation_path);
     //let baseline_segmentation_image: Texture2D = load_texture(baseline_bush_segmentation_path.as_str()).await.unwrap();
     //let baseline_segmentation_data: Image = baseline_segmentation_image.get_texture_data();
-    info!("\t...done.");
+    //info!("\t...done.");
     info!("Loading offset image from {}...", offset_image_path);
     let offset_image: Texture2D = load_texture(offset_image_path.as_str()).await.unwrap();
     info!("\t...done.");
-    info!("Loading offset bush segmentation image from {}...", offset_bush_segmentation_path);
+    //info!("Loading offset bush segmentation image from {}...", offset_bush_segmentation_path);
     //let offset_segmentation_image: Texture2D = load_texture(offset_bush_segmentation_path.as_str()).await.unwrap();
     //let offset_segmentation_data: Image = offset_segmentation_image.get_texture_data();
-    info!("\t...done.");
+    //info!("\t...done.");
 
 
     //// Begin processing
@@ -244,6 +256,10 @@ async fn main() {
         {
             draw_mesh = !draw_mesh;
         }
+        if is_key_pressed(KeyCode::H)
+        {
+            println!("{}", HOTKEYS_HELP);
+        }
 
 
         //// Handle drawing of the UI components
@@ -255,7 +271,7 @@ async fn main() {
         // background grid
         draw_grid(20, 1., BLACK, GRAY);
 
-        warpset.draw_warped_offset_image(&offset_image, &baseline_radial_size);
+        warpset.draw_warped_offset_image(&baseline_radial_size);
         if draw_mesh
         {
             warpset.draw_ui(&baseline_size);
@@ -293,7 +309,7 @@ fn get_mouse_baseline_coords(cam: &Camera3D, baseline_size: &Vec2) -> Vec2
 fn save_warped_track(track: &Track, warpset: &WarpSet, input_track_filepath: &str)
 {
     println!("Saving track...");
-    let filename = input_track_filepath.clone().to_owned();
+    let filename = input_track_filepath.to_owned();
     let filename = filename.replace(".csv", "-warped.csv");
     track.write_warped_track_to_file(&warpset, &filename);
     println!("Track saved!");
