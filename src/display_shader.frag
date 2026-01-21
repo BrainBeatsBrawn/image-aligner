@@ -42,12 +42,12 @@ vec2 invBilinear( in vec2 p, in vec2 a, in vec2 b, in vec2 d, in vec2 c )
 
     // Get a measure of the size of the region that we
     // can scale everything by to avoid rounding errors
-    float avgLen = (distance(a,c) + distance(b,d))/2.0;
-    e /= avgLen;
-    f /= avgLen;
-    g /= avgLen;
-    h /= avgLen;
-    p /= avgLen;
+    //float avgLen = (distance(a,c) + distance(b,d))/2.0;
+    //e /= avgLen;
+    //f /= avgLen;
+    //g /= avgLen;
+    //h /= avgLen;
+    //p /= avgLen;
         
     float k2 = cross2d( g, f );
     float k1 = cross2d( e, f ) + cross2d( h, g );

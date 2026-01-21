@@ -402,6 +402,95 @@ impl WarpSet
         // Then bilinearly interpolate the point between the four projection points
         p1 + (p2-p1)*uv.x + (p3-p1)*uv.y + (p1-p2+p4-p3)*uv.x*uv.y
     }
+    // Takes a point in baseline-space, converts it to offset space
+    // (aka it performs those horrible inverse-transforms)
+    // Shouldn't be trusted to return highly accurate results
+    pub fn map_point_from_baseline_to_offset(&self, p: &Vector2<f64>) -> Vector2<f64>
+    {
+        // Check each subregion to see if p is within it
+        for x in 0..self.grid_size
+        {
+            for y in 0..self.grid_size
+            {
+                // Get the 4 relevant points
+                let warp_p1 = self.warped_points[(x,y)];
+                let warp_p2 = self.warped_points[(x+1,y)];
+                let warp_p3 = self.warped_points[(x+1,y+1)];
+                let warp_p4 = self.warped_points[(x,y+1)];
+                
+                // Compute the uv in this subregion
+                let uv = Self::invBilinear(p, warp_p1, warp_p2,
+                                              warp_p3, warp_p4);
+
+                if uv.x < 0. || uv.y < 0.
+                {
+                    continue;
+                }
+
+                // If it's within range then compute it's proper location within offsetspace by
+                // adding the space taken up by the other patches.
+            }
+        }
+    }
+    
+    // Calculates the inverse bilinear interpolation between the 4 points, an edited version of the
+    // function from demonstrated by Inigo Quilez at https://iquilezles.org/articles/ibilinear/
+    pub fn invBilinear(p: &Vector2<f64>, a: &Vector2<f64>, b: &Vector2<f64>, d: &Vector2<f64>, c: &Vector2<f64>) -> Vector2<f64>
+    {
+        fn cross2d(a: &Vector2<f64>, b: &Vector2<f64>) -> f64
+        {
+            a.x*b.y - a.y*b.x
+        }
+
+        let p = *p;
+        let a = *a;
+        let b = *b;
+        let d = *d;
+        let c = *c;
+
+        let mut res = Vector2::<f64>::new(-1.0, -1.0);
+    
+        let mut e = b-a;
+        let mut f = d-a;
+        let mut g = a-b+c-d;
+        let mut h = p-a;
+    
+        // Get a measure of the size of the region that we
+        // can scale everything by to avoid rounding errors
+            
+        let k2 = cross2d( &g, &f );
+        let k1 = cross2d( &e, &f ) + cross2d( &h, &g );
+        let k0 = cross2d( &h, &e );
+        
+        // if edges are parallel, this is a linear equation
+        if( k2.abs() < 0.001 )
+        {
+            res = Vector2::<f64>::new( (h.x*k1+f.x*k0)/(e.x*k1-g.x*k0), -k0/k1 );
+        }
+        // otherwise, it's a quadratic
+    	else
+        {
+            let w = k1*k1 - 4.0*k0*k2;
+            if w<0.0
+            {
+                return res; // Just return the -1,-1 vector.
+            }
+            let w = w.sqrt();
+    
+            let ik2 = 0.5/k2;
+            let mut v = (-k1 - w)*ik2;
+            let mut u = (h.x - f.x*v)/(e.x + g.x*v);
+            
+            if( u<0.0 || u>1.0 || v<0.0 || v>1.0 )
+            {
+               v = (-k1 + w)*ik2;
+               u = (h.x - f.x*v)/(e.x + g.x*v);
+            }
+            res = Vector2::<f64>::new(u, v);
+        }
+        
+        res
+    }
 
     //// Saving
     pub fn write_to_file(&self, path: &str) -> ()

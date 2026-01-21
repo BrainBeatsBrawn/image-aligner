@@ -15,6 +15,9 @@ use warpset::WarpSet;
 mod track;
 use track::Track;
 
+mod correspondences;
+use correspondences::Correspondences;
+
 //const FRAGMENT_SHADER: &'static str = include_str!("display_shader.frag");
 //const VERTEX_SHADER: &'static str = include_str!("display_shader.vert");
 
@@ -69,9 +72,9 @@ async fn main() {
     
     //// Parse command line arguments
     let mut baseline_image_path = String::new();
-    let mut baseline_bush_segmentation_path = String::new();
+    //let mut baseline_bush_segmentation_path = String::new();
     let mut offset_image_path = String::new();
-    let mut offset_bush_segmentation_path = String::new();
+    //let mut offset_bush_segmentation_path = String::new();
     let mut start_points_input = String::new();
     let mut start_points_filepath = String::new();
     let mut input_track_filepath = String::new();
@@ -97,15 +100,15 @@ async fn main() {
         ap.refer(&mut baseline_image_path)
             .add_argument("BASELINE_IMAGE", Store, "Path to the baseline image (the one that will not be warped)")
             .required();
-        ap.refer(&mut baseline_bush_segmentation_path)
-            .add_argument("BASELINE_SEG", Store, "Path to the baseline bush segmentation image")
-            .required();
+        //ap.refer(&mut baseline_bush_segmentation_path)
+        //    .add_argument("BASELINE_SEG", Store, "Path to the baseline bush segmentation image")
+        //    .required();
         ap.refer(&mut offset_image_path)
             .add_argument("OFFSET_IMAGE", Store, "Path to the offset image (the one that will be warped)")
             .required();
-        ap.refer(&mut offset_bush_segmentation_path)
-            .add_argument("OFFSET_IMAGE_SEG", Store, "Path to the offset bush segmentation image")
-            .required();
+        //ap.refer(&mut offset_bush_segmentation_path)
+        //    .add_argument("OFFSET_IMAGE_SEG", Store, "Path to the offset bush segmentation image")
+        //    .required();
         ap.refer(&mut start_points_input)
             .add_option(&["-s", "--start-points"], Store, "Comma-separated list of four points in the baseline image-space that will be used as a starting point for the warp search. Row-major order. Each point is a comma-separated pair of numbers, e.g. \"(0,0),(1,0),(0,1),(1,1)\" (including quotation marks)");
         ap.refer(&mut start_points_filepath)
@@ -165,6 +168,9 @@ async fn main() {
         warpset = WarpSet::from_file(&start_points_filepath, &offset_image).expect("Failed to create warpset from file.");
     };
 
+    // Create correspondences object
+    let mut correspondences = Correspondences::new();
+
     let mut camera = Camera3D{
         position: vec3(0.0, CAM_HEIGHT, 0.0),
         target: vec3(0.0, 0.0, 0.0), // Camera is looking at the origin
@@ -185,9 +191,8 @@ async fn main() {
         set_camera(&camera);
 
         // Draw a point at the mouse for debug purposes
-        //let mouse_pos_w = get_mouse_wcoords(&camera);
-        //draw_sphere(vec3(mouse_pos_w.x, MOUSE_HEIGHT, mouse_pos_w.y), 0.05, None, YELLOW);
-        let mouse_pos_bl = get_mouse_baseline_coords(&camera, &baseline_size);
+        let mouse_pos_w = get_mouse_wcoords(&camera);
+        let mouse_pos_bl: Vec2 = get_mouse_baseline_coords(&mouse_pos_w, &baseline_size);
 
         // Update the warpset to track actions relative to the mouse
         warpset.update_closest_point(&mouse_pos_bl, is_mouse_button_down(MouseButton::Left));
@@ -260,22 +265,35 @@ async fn main() {
         {
             println!("{}", HOTKEYS_HELP);
         }
-
+        if is_key_pressed(KeyCode::B)
+        {
+            let mouse_pos_bl64 = na::Vector2::<f64>::new(mouse_pos_bl.x.into(), mouse_pos_bl.y.into());
+            correspondences.stage_baseline(mouse_pos_bl64);
+        }
+        if is_key_pressed(KeyCode::O)
+        {
+            let mouse_pos_bl64 = na::Vector2::<f64>::new(mouse_pos_bl.x.into(), mouse_pos_bl.y.into());
+            let mouse_pos_in_offset = warpset.map_point_from_baseline_to_offset(&mouse_pos_bl64);
+        }
 
         //// Handle drawing of the UI components
-        // baseline image
+        // Baseline image
         draw_plane(vec3(baseline_radial_size.x, BASELINE_HEIGHT, 0.5),
                    baseline_radial_size, Some(&baseline_image),
                    WHITE);
         
-        // background grid
+        // Background grid
         draw_grid(20, 1., BLACK, GRAY);
 
+        // Warpset and warpmesh
         warpset.draw_warped_offset_image(&baseline_radial_size);
         if draw_mesh
         {
             warpset.draw_ui(&baseline_size);
         }
+
+        // Correspondences
+        correspondences.draw(&warpset, &baseline_size, &mouse_pos_w);
 
         // Track
         track.draw_track();
@@ -300,10 +318,10 @@ fn get_mouse_wcoords(cam: &Camera3D) -> Vec2
     mouse_pos_local + vec2(cam.position.x, cam.position.z)
 }
 
-fn get_mouse_baseline_coords(cam: &Camera3D, baseline_size: &Vec2) -> Vec2
+fn get_mouse_baseline_coords(mouse_wcoords: &Vec2, baseline_size: &Vec2) -> Vec2
 {
-    let mouse_w_coords = get_mouse_wcoords(cam);
-    mouse_w_coords/(*baseline_size)
+    //let mouse_w_coords = get_mouse_wcoords(cam);
+    *mouse_wcoords/(*baseline_size)
 }
 
 fn save_warped_track(track: &Track, warpset: &WarpSet, input_track_filepath: &str)
