@@ -69,9 +69,9 @@ async fn main() {
     
     //// Parse command line arguments
     let mut baseline_image_path = String::new();
-    let mut baseline_bush_segmentation_path = String::new();
+    //let mut baseline_bush_segmentation_path = String::new();
     let mut offset_image_path = String::new();
-    let mut offset_bush_segmentation_path = String::new();
+    //let mut offset_bush_segmentation_path = String::new();
     let mut start_points_input = String::new();
     let mut start_points_filepath = String::new();
     let mut input_track_filepath = String::new();
@@ -97,15 +97,15 @@ async fn main() {
         ap.refer(&mut baseline_image_path)
             .add_argument("BASELINE_IMAGE", Store, "Path to the baseline image (the one that will not be warped)")
             .required();
-        ap.refer(&mut baseline_bush_segmentation_path)
-            .add_argument("BASELINE_SEG", Store, "Path to the baseline bush segmentation image")
-            .required();
+        //ap.refer(&mut baseline_bush_segmentation_path)
+        //    .add_argument("BASELINE_SEG", Store, "Path to the baseline bush segmentation image")
+        //    .required();
         ap.refer(&mut offset_image_path)
             .add_argument("OFFSET_IMAGE", Store, "Path to the offset image (the one that will be warped)")
             .required();
-        ap.refer(&mut offset_bush_segmentation_path)
-            .add_argument("OFFSET_IMAGE_SEG", Store, "Path to the offset bush segmentation image")
-            .required();
+        //ap.refer(&mut offset_bush_segmentation_path)
+        //    .add_argument("OFFSET_IMAGE_SEG", Store, "Path to the offset bush segmentation image")
+        //    .required();
         ap.refer(&mut start_points_input)
             .add_option(&["-s", "--start-points"], Store, "Comma-separated list of four points in the baseline image-space that will be used as a starting point for the warp search. Row-major order. Each point is a comma-separated pair of numbers, e.g. \"(0,0),(1,0),(0,1),(1,1)\" (including quotation marks)");
         ap.refer(&mut start_points_filepath)
