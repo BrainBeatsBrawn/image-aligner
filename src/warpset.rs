@@ -405,7 +405,7 @@ impl WarpSet
     // Takes a point in baseline-space, converts it to offset space
     // (aka it performs those horrible inverse-transforms)
     // Shouldn't be trusted to return highly accurate results
-    pub fn map_point_from_baseline_to_offset(&self, p: &Vector2<f64>) -> Vector2<f64>
+    pub fn map_point_from_baseline_to_offset(&self, p: &Vector2<f64>, debug:bool) -> Option<Vector2<f64>>
     {
         // Check each subregion to see if p is within it
         for x in 0..self.grid_size
@@ -415,40 +415,42 @@ impl WarpSet
                 // Get the 4 relevant points
                 let warp_p1 = self.warped_points[(x,y)];
                 let warp_p2 = self.warped_points[(x+1,y)];
-                let warp_p3 = self.warped_points[(x+1,y+1)];
-                let warp_p4 = self.warped_points[(x,y+1)];
+                let warp_p3 = self.warped_points[(x,y+1)];
+                let warp_p4 = self.warped_points[(x+1,y+1)];
                 
                 // Compute the uv in this subregion
                 let uv = Self::invBilinear(p, warp_p1, warp_p2,
-                                              warp_p3, warp_p4);
+                                              warp_p3, warp_p4, debug);
+                if uv.is_none() { continue; }
+                let uv = uv.unwrap();
 
                 if uv.x < 0. || uv.y < 0.
                 {
                     continue;
                 }
 
+                if debug {
+                    println!("...found in subregion ({x},{y}).");
+                }
+
                 // If it's within range then compute it's proper location within offsetspace by
                 // adding the space taken up by the other patches.
+                return Some(uv);
             }
         }
+        None
     }
     
     // Calculates the inverse bilinear interpolation between the 4 points, an edited version of the
     // function from demonstrated by Inigo Quilez at https://iquilezles.org/articles/ibilinear/
-    pub fn invBilinear(p: &Vector2<f64>, a: &Vector2<f64>, b: &Vector2<f64>, d: &Vector2<f64>, c: &Vector2<f64>) -> Vector2<f64>
+    // HackerHam Version:
+    // https://gist.github.com/ivanpopelyshev/2a75479075286deb8ee5dc1fb2e07f09
+    pub fn invBilinear(p: &Vector2<f64>, a: Vector2<f64>, b: Vector2<f64>, d: Vector2<f64>, c: Vector2<f64>, debug:bool) -> Option<Vector2<f64>>
     {
         fn cross2d(a: &Vector2<f64>, b: &Vector2<f64>) -> f64
         {
             a.x*b.y - a.y*b.x
         }
-
-        let p = *p;
-        let a = *a;
-        let b = *b;
-        let d = *d;
-        let c = *c;
-
-        let mut res = Vector2::<f64>::new(-1.0, -1.0);
     
         let mut e = b-a;
         let mut f = d-a;
@@ -461,36 +463,118 @@ impl WarpSet
         let k2 = cross2d( &g, &f );
         let k1 = cross2d( &e, &f ) + cross2d( &h, &g );
         let k0 = cross2d( &h, &e );
+
+        let k2u = cross2d(&e, &g);
+        let k1u = cross2d(&e, &f) + cross2d(&g, &h);
+        let k0u = cross2d(&h, &f);
+
+        let mut v1 = 0.0;
+        let mut u1 = 0.0;
+        let mut v2 = 0.0;
+        let mut u2 = 0.0;
         
         // if edges are parallel, this is a linear equation
-        if( k2.abs() < 0.001 )
+        const epsilon: f64 = 0.00001;
+        if k2.abs() < epsilon
         {
-            res = Vector2::<f64>::new( (h.x*k1+f.x*k0)/(e.x*k1-g.x*k0), -k0/k1 );
+            v1 = -k0/k1;
+            u1 = (h.x - f.x*v1)/(e.x + g.x*v1);
+            if(debug) {
+                println!("k2 is 0");
+                println!("\tv1: {v1}\n\tu1: {u1}");
+                //TODO: H'OKAY. u1 is NaN when this gets called in the parallelogram case.
+                //      That sucks. But may not be critical to doing the thing (it just won't(?)
+                //      work when using points on parallelograms. Maybe I could check for this?).
+            }
+        }
+        else if k2u.abs() < epsilon
+        {
+            if(debug) {
+                println!("k2u is 0");
+            }
+            u1 = k0u/k1u;
+            v1 = (h.y - e.y*u1)/(f.y + g.y*u1);
         }
         // otherwise, it's a quadratic
     	else
         {
+            if(debug) {
+                println!("neither k2s are 0.");
+            }
             let w = k1*k1 - 4.0*k0*k2;
-            if w<0.0
-            {
-                return res; // Just return the -1,-1 vector.
+
+            if w < 0.0 {
+                return None;
             }
+
             let w = w.sqrt();
-    
-            let ik2 = 0.5/k2;
-            let mut v = (-k1 - w)*ik2;
-            let mut u = (h.x - f.x*v)/(e.x + g.x*v);
-            
-            if( u<0.0 || u>1.0 || v<0.0 || v>1.0 )
-            {
-               v = (-k1 + w)*ik2;
-               u = (h.x - f.x*v)/(e.x + g.x*v);
-            }
-            res = Vector2::<f64>::new(u, v);
+            v1 = (-k1  - w)/(2.0*k2);
+            v2 = (-k1  + w)/(2.0*k2);
+            u1 = (-k1u - w)/(2.0*k2u);
+            u2 = (-k1u + w)/(2.0*k2u);
         }
-        
-        res
+
+        let b1 = v1>0.0 && v1<1.0 && u1>0.0 && u1<1.0;
+        let b2 = v2>0.0 && v2<1.0 && u2>0.0 && u2<1.0;
+
+        let mut out = None;
+        if  b1 && !b2 { out = Some(Vector2::<f64>::new(u1, v1)); }
+        if !b1 &&  b2 { out = Some(Vector2::<f64>::new(u2, v2)); }
+
+        out
     }
+    //pub fn invBilinear(p: &Vector2<f64>, a: Vector2<f64>, b: Vector2<f64>, d: Vector2<f64>, c: Vector2<f64>, debug:bool) -> Option<Vector2<f64>>
+    //{
+    //    fn cross2d(a: &Vector2<f64>, b: &Vector2<f64>) -> f64
+    //    {
+    //        a.x*b.y - a.y*b.x
+    //    }
+    //
+    //    let mut e = b-a;
+    //    let mut f = d-a;
+    //    let mut g = a-b+c-d;
+    //    let mut h = p-a;
+    //
+    //    // Get a measure of the size of the region that we
+    //    // can scale everything by to avoid rounding errors
+    //        
+    //    let k2 = cross2d( &g, &f );
+    //    let k1 = cross2d( &e, &f ) + cross2d( &h, &g );
+    //    let k0 = cross2d( &h, &e );
+    //    
+    //    // if edges are parallel, this is a linear equation
+    //    if k2.abs() < 0.0001
+    //    {
+    //        if debug {
+    //            println!("edges are parallel");
+    //            println!("k0:{:?}\nk1:{:?}\nk2:{:?}", k0, k1, k2);
+    //            println!("e:{:?}\nf:{:?}\ng:{:?}\nh:{:?}", e,f,g,h);
+    //        }
+
+    //        return Some(Vector2::<f64>::new( (h.x*k1+f.x*k0)/(e.x*k1-g.x*k0), -k0/k1 ));
+    //    }
+    //    // otherwise, it's a quadratic
+    //	else
+    //    {
+    //        let w = k1*k1 - 4.0*k0*k2;
+    //        if w<0.0
+    //        {
+    //            return None; // Nothing here.
+    //        }
+    //        let w = w.sqrt();
+    //
+    //        let ik2 = 0.5/k2;
+    //        let mut v = (-k1 - w)*ik2;
+    //        let mut u = (h.x - f.x*v)/(e.x + g.x*v);
+    //        
+    //        if u<0.0 || u>1.0 || v<0.0 || v>1.0
+    //        {
+    //           v = (-k1 + w)*ik2;
+    //           u = (h.x - f.x*v)/(e.x + g.x*v);
+    //        }
+    //        return Some(Vector2::<f64>::new(u, v));
+    //    }
+    //}
 
     //// Saving
     pub fn write_to_file(&self, path: &str) -> ()
