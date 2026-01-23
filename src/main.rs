@@ -273,14 +273,20 @@ async fn main() {
         if is_key_pressed(KeyCode::O)
         {
             let mouse_pos_bl64 = na::Vector2::<f64>::new(mouse_pos_bl.x.into(), mouse_pos_bl.y.into());
-            let mouse_pos_in_offset = warpset.map_point_from_baseline_to_offset(&mouse_pos_bl64, true);
+            let mouse_pos_in_offset = warpset.map_point_from_baseline_to_offset(&mouse_pos_bl64);
             if mouse_pos_in_offset.is_some()
             {
                 let uv = mouse_pos_in_offset.unwrap();
-                println!("The point has UV ({:?}, {:?})", uv.x, uv.y);
+                correspondences.stage_offset(uv);
+                debug!("The selected offset point has UV ({:?}, {:?})", uv.x, uv.y);
             }else{
-                println!("Point outside of offset.");
+                debug!("Point outside of offset.");
             }
+        }
+        if is_key_pressed(KeyCode::C)
+        {
+            correspondences.commit_staged();
+            info!("Staged correspondences commited!");
         }
 
 
@@ -296,37 +302,37 @@ async fn main() {
         // Warpset and warpmesh
         warpset.draw_warped_offset_image(&baseline_radial_size);
         
-        // Bleh. Debugging like this again
-        const grid_size : usize = 40;
-        const debug_height : f32= 4.5;
-        const point_size : f32= 1./((grid_size+1) as f32*4.);
-        for x in 0..grid_size
-        {
-            for y in 0..grid_size
-            {
-                let x_pos_bl = (x as f32 + 0.5)/grid_size as f32;
-                let y_pos_bl = (y as f32 + 0.5)/grid_size as f32;
-                let pos_bl64 = na::Vector2::<f64>::new(x_pos_bl.into(), y_pos_bl.into());
-                let pos_in_offset = warpset.map_point_from_baseline_to_offset(&pos_bl64, false);
-                let colour = if pos_in_offset.is_some()
-                { 
-                    Color{
-                        r: 0.,
-                        g: pos_in_offset.unwrap().x as f32,
-                        b: pos_in_offset.unwrap().y as f32,
-                        a: 1.
-                    }
-                } else {
-                    RED
-                };
-                let pos_w = vec2(x_pos_bl, y_pos_bl) * baseline_size;
-                draw_plane(vec3(pos_w.x, debug_height, pos_w.y),
-                           vec2(point_size, point_size), 
-                           None,
-                           colour
-                          );
-            }
-        }
+        //// Bleh. Debugging like this again
+        //const grid_size : usize = 40;
+        //const debug_height : f32= 4.5;
+        //const point_size : f32= 1./((grid_size+1) as f32*4.);
+        //for x in 0..grid_size
+        //{
+        //    for y in 0..grid_size
+        //    {
+        //        let x_pos_bl = (x as f32 + 0.5)/grid_size as f32;
+        //        let y_pos_bl = (y as f32 + 0.5)/grid_size as f32;
+        //        let pos_bl64 = na::Vector2::<f64>::new(x_pos_bl.into(), y_pos_bl.into());
+        //        let pos_in_offset = warpset.map_point_from_baseline_to_offset(&pos_bl64);
+        //        let colour = if pos_in_offset.is_some()
+        //        { 
+        //            Color{
+        //                r: 0.,
+        //                g: pos_in_offset.unwrap().x as f32,
+        //                b: pos_in_offset.unwrap().y as f32,
+        //                a: 1.
+        //            }
+        //        } else {
+        //            RED
+        //        };
+        //        let pos_w = vec2(x_pos_bl, y_pos_bl) * baseline_size;
+        //        draw_plane(vec3(pos_w.x, debug_height, pos_w.y),
+        //                   vec2(point_size, point_size), 
+        //                   None,
+        //                   colour
+        //                  );
+        //    }
+        //}
 
         if draw_mesh
         {
