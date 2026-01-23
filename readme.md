@@ -42,6 +42,8 @@ Optional arguments:
   -p,--process-points   If enabled, the program simply immediately processes
                         the track supplied with -t against the supplied
                         pointset and then closes.
+  -c,--input-correspondences-file INPUT_CORRESPONDENCES_FILE
+                        Path to a .pts correspondences file to load.
 ```
 
 When in-program, the controls are as follows:
@@ -49,11 +51,15 @@ When in-program, the controls are as follows:
    Hotkeys
 -------------------------------------------------------------------
 q       - Quit.
-tab     - Subdivide the current warp mesh.
-up/down - Increase/decrease opacity of the offset image.
+tab     - subdivide the current warp mesh.
+up/down - increase/decrease opacity of the offset image.
 1-9     - set the opacity of the offset image to decimal divisions.
 s       - Save the current warp mesh.
-t       - Save the loaded warpset in baseline imagespace.
-m       - Show/hide the warpmesh.
-h       - Display this text.
+t       - save the loaded Track in baseline imagespace.
+m       - show/hide the warpMesh and correspondence lines.
+h       - display this Help text.
+b       - stage a correspondence point in Baseline space.
+o       - stage a correspondence point in Offset space.
+c       - Commit the staged correspondence points.
+p       - save the current Point correspondences.
 ```
