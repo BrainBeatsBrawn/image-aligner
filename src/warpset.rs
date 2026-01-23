@@ -141,7 +141,7 @@ impl WarpSet
     pub fn from_file(filepath: &str, offset_image: & Texture2D) -> Option<WarpSet>
     {
         println!("Reading file \"{}\"...", filepath);
-        let file_contents = read_to_string(filepath).expect("Couldn't load file from given filepath.");
+        let file_contents = read_to_string(filepath).expect("Couldn't load warp file file from given filepath.");
         let vector = get_start_points_from_string(file_contents).expect("Start points malformed.");
         Self::new(&vector, offset_image)
     }
@@ -402,6 +402,129 @@ impl WarpSet
         // Then bilinearly interpolate the point between the four projection points
         p1 + (p2-p1)*uv.x + (p3-p1)*uv.y + (p1-p2+p4-p3)*uv.x*uv.y
     }
+    // Takes a point in baseline-space, converts it to offset space
+    // (aka it performs those horrible inverse-transforms)
+    // Shouldn't be trusted to return highly accurate results
+    pub fn map_point_from_baseline_to_offset(&self, p: &Vector2<f64>) -> Option<Vector2<f64>>
+    {
+        // Check each subregion to see if p is within it
+        for x in 0..self.grid_size
+        {
+            for y in 0..self.grid_size
+            {
+                // Get the 4 relevant points
+                let warp_p1 = self.warped_points[(x,y)];
+                let warp_p2 = self.warped_points[(x+1,y)];
+                let warp_p3 = self.warped_points[(x,y+1)];
+                let warp_p4 = self.warped_points[(x+1,y+1)];
+                
+                // Compute the uv in this subregion
+                let uv = Self::inv_bilinear(p, warp_p1, warp_p3,
+                                              warp_p2, warp_p4);
+                if uv.is_none() { continue; }
+                let uv = uv.unwrap();
+
+                if uv.x < 0. || uv.y < 0.
+                {
+                    continue;
+                }
+
+                // If it's within range then compute it's proper location within offsetspace by
+                // adding the space taken up by the other patches.
+                let offset = Vector2::<f64>::new(y as f64, x as f64);
+                return Some((offset+uv)/self.grid_size as f64);
+            }
+        }
+        None
+    }
+    
+    // Calculates the inverse bilinear interpolation between the 4 points, an edited version of the
+    // function from demonstrated by Inigo Quilez at https://iquilezles.org/articles/ibilinear/
+    // HackerHam Version:
+    // https://gist.github.com/ivanpopelyshev/2a75479075286deb8ee5dc1fb2e07f09
+    pub fn inv_bilinear(p: &Vector2<f64>, a: Vector2<f64>, b: Vector2<f64>, d: Vector2<f64>, c: Vector2<f64>) -> Option<Vector2<f64>>
+    {
+        fn cross2d(a: &Vector2<f64>, b: &Vector2<f64>) -> f64
+        {
+            a.x*b.y - a.y*b.x
+        }
+    
+        let e = b-a;
+        let f = d-a;
+        let g = a-b+c-d;
+        let h = p-a;
+    
+        // Get a measure of the size of the region that we
+        // can scale everything by to avoid rounding errors
+            
+        let k2 = cross2d( &g, &f );
+        let k1 = cross2d( &e, &f ) + cross2d( &h, &g );
+        let k0 = cross2d( &h, &e );
+
+        let k2u = cross2d(&e, &g);
+        let k1u = cross2d(&e, &f) + cross2d(&g, &h);
+        let k0u = cross2d(&h, &f);
+
+        let mut v1 = 0.0;
+        let u1;
+        let mut v2 = 0.0;
+        let mut u2 = 0.0;
+        
+        // if edges are parallel, this is a linear equation
+        const EPSILON: f64 = 0.00001;
+        if k2.abs() < EPSILON
+        {
+            v1 = -k0/k1;
+
+            let denom_x = e.x + g.x * v1;
+            let denom_y = e.y + g.y * v1;
+
+            if denom_x.abs() > denom_y.abs()
+            {
+                u1 = (h.x - f.x*v1) / denom_x;
+            }else{
+                u1 = (h.y - f.y*v1) / denom_y;
+            }
+        }
+        else if k2u.abs() < EPSILON
+        {
+            u1 = k0u/k1u;
+
+            let denom_x = f.x + g.x*u1;
+            let denom_y = f.y + g.y*u1;
+
+            if denom_x.abs() > denom_y.abs()
+            {
+                v1 = (h.x - e.x*u1) / denom_x;
+            }else{
+                v2 = (h.y - e.y*u1) / denom_y;
+            }
+        }
+        // otherwise, it's a quadratic
+    	else
+        {
+            let w = k1*k1 - 4.0*k0*k2;
+
+            if w < 0.0 {
+                return None;
+            }
+
+            let w = w.sqrt();
+            v1 = (-k1  - w)/(2.0*k2);
+            v2 = (-k1  + w)/(2.0*k2);
+            u1 = (-k1u - w)/(2.0*k2u);
+            u2 = (-k1u + w)/(2.0*k2u);
+        }
+
+        let b1 = v1>0.0 && v1<1.0 && u1>0.0 && u1<1.0;
+        let b2 = v2>0.0 && v2<1.0 && u2>0.0 && u2<1.0;
+
+        let mut out = None;
+        if  b1 && !b2 { out = Some(Vector2::<f64>::new(u1, v1)); }
+        if !b1 &&  b2 { out = Some(Vector2::<f64>::new(u2, v2)); }
+
+        out
+    }
 
     //// Saving
     pub fn write_to_file(&self, path: &str) -> ()
@@ -415,7 +538,7 @@ impl WarpSet
         }
         mesh_string.pop(); // Remove the last comma
         file.write_all(mesh_string.as_bytes()).unwrap();
-        println!("Warpmesh file written.");
+        println!("Warpmesh file written!");
     }
 
     //// Drawing

@@ -15,6 +15,9 @@ use warpset::WarpSet;
 mod track;
 use track::Track;
 
+mod correspondences;
+use correspondences::Correspondences;
+
 //const FRAGMENT_SHADER: &'static str = include_str!("display_shader.frag");
 //const VERTEX_SHADER: &'static str = include_str!("display_shader.vert");
 
@@ -33,13 +36,17 @@ const HOTKEYS_HELP: &str ="
      Hotkeys
   -------------------------------------------------------------------
   q       - Quit.
-  tab     - Subdivide the current warp mesh.
-  up/down - Increase/decrease opacity of the offset image.
+  tab     - subdivide the current warp mesh.
+  up/down - increase/decrease opacity of the offset image.
   1-9     - set the opacity of the offset image to decimal divisions.
   s       - Save the current warp mesh.
-  t       - Save the loaded warpset in baseline imagespace.
-  m       - Show/hide the warpmesh.
-  h       - Display this text.
+  t       - save the loaded Track in baseline imagespace.
+  m       - show/hide the warpMesh and correspondence lines.
+  h       - display this Help text.
+  b       - stage a correspondence point in Baseline space.
+  o       - stage a correspondence point in Offset space.
+  c       - Commit the staged correspondence points.
+  p       - save the current Point correspondences.
 ";
 
 
@@ -75,6 +82,7 @@ async fn main() {
     let mut start_points_input = String::new();
     let mut start_points_filepath = String::new();
     let mut input_track_filepath = String::new();
+    let mut input_correspondences_filepath = String::new();
     let mut process_points_and_exit = false;
 
     // UI properties
@@ -114,6 +122,8 @@ async fn main() {
             .add_option(&["-t", "--input-track-file"], Store, "Path to a track CSV file to load.");
         ap.refer(&mut process_points_and_exit)
             .add_option(&["-p", "--process-points"], StoreTrue, "If enabled, the program simply immediately processes the track supplied with -t against the supplied pointset and then closes.");
+        ap.refer(&mut input_correspondences_filepath)
+            .add_option(&["-c", "--input-correspondences-file"], Store, "Path to a .pts correspondences file to load.");
         ap.parse_args_or_exit();
     }
     
@@ -165,6 +175,15 @@ async fn main() {
         warpset = WarpSet::from_file(&start_points_filepath, &offset_image).expect("Failed to create warpset from file.");
     };
 
+    // Create correspondences object
+    let mut correspondences = Correspondences::new();
+
+    let input_correspondences_filepath = input_correspondences_filepath.trim();
+    if input_correspondences_filepath != "" 
+    {
+        correspondences.read_from_file(&input_correspondences_filepath);
+    }
+
     let mut camera = Camera3D{
         position: vec3(0.0, CAM_HEIGHT, 0.0),
         target: vec3(0.0, 0.0, 0.0), // Camera is looking at the origin
@@ -185,9 +204,8 @@ async fn main() {
         set_camera(&camera);
 
         // Draw a point at the mouse for debug purposes
-        //let mouse_pos_w = get_mouse_wcoords(&camera);
-        //draw_sphere(vec3(mouse_pos_w.x, MOUSE_HEIGHT, mouse_pos_w.y), 0.05, None, YELLOW);
-        let mouse_pos_bl = get_mouse_baseline_coords(&camera, &baseline_size);
+        let mouse_pos_w = get_mouse_wcoords(&camera);
+        let mouse_pos_bl: Vec2 = get_mouse_baseline_coords(&mouse_pos_w, &baseline_size);
 
         // Update the warpset to track actions relative to the mouse
         warpset.update_closest_point(&mouse_pos_bl, is_mouse_button_down(MouseButton::Left));
@@ -260,21 +278,58 @@ async fn main() {
         {
             println!("{}", HOTKEYS_HELP);
         }
+        if is_key_pressed(KeyCode::B)
+        {
+            let mouse_pos_bl64 = na::Vector2::<f64>::new(mouse_pos_bl.x.into(), mouse_pos_bl.y.into());
+            correspondences.stage_baseline(mouse_pos_bl64);
+        }
+        if is_key_pressed(KeyCode::O)
+        {
+            let mouse_pos_bl64 = na::Vector2::<f64>::new(mouse_pos_bl.x.into(), mouse_pos_bl.y.into());
+            let mouse_pos_in_offset = warpset.map_point_from_baseline_to_offset(&mouse_pos_bl64);
+            if mouse_pos_in_offset.is_some()
+            {
+                let uv = mouse_pos_in_offset.unwrap();
+                correspondences.stage_offset(uv);
+                debug!("The selected offset point has UV ({:?}, {:?})", uv.x, uv.y);
+            }else{
+                debug!("Point outside of offset.");
+            }
+        }
+        if is_key_pressed(KeyCode::C)
+        {
+            correspondences.commit_staged();
+            info!("Staged correspondences commited!");
+        }
+        if is_key_pressed(KeyCode::P)
+        {
+            let filename = Utc::now().to_string() + ".pts";
+            correspondences.write_to_file(&filename);
+        }
 
 
         //// Handle drawing of the UI components
-        // baseline image
+        // Baseline image
         draw_plane(vec3(baseline_radial_size.x, BASELINE_HEIGHT, 0.5),
                    baseline_radial_size, Some(&baseline_image),
                    WHITE);
         
-        // background grid
+        // Background grid
         draw_grid(20, 1., BLACK, GRAY);
 
+        // Warpset and warpmesh
         warpset.draw_warped_offset_image(&baseline_radial_size);
+
         if draw_mesh
         {
             warpset.draw_ui(&baseline_size);
+        }
+
+        // Correspondences
+        if draw_mesh
+        {
+            let corr_thickness = 0.01 * camera.fovy;
+            correspondences.draw(&warpset, &baseline_size, &mouse_pos_w, corr_thickness);
         }
 
         // Track
@@ -300,10 +355,10 @@ fn get_mouse_wcoords(cam: &Camera3D) -> Vec2
     mouse_pos_local + vec2(cam.position.x, cam.position.z)
 }
 
-fn get_mouse_baseline_coords(cam: &Camera3D, baseline_size: &Vec2) -> Vec2
+fn get_mouse_baseline_coords(mouse_wcoords: &Vec2, baseline_size: &Vec2) -> Vec2
 {
-    let mouse_w_coords = get_mouse_wcoords(cam);
-    mouse_w_coords/(*baseline_size)
+    //let mouse_w_coords = get_mouse_wcoords(cam);
+    *mouse_wcoords/(*baseline_size)
 }
 
 fn save_warped_track(track: &Track, warpset: &WarpSet, input_track_filepath: &str)
@@ -314,3 +369,35 @@ fn save_warped_track(track: &Track, warpset: &WarpSet, input_track_filepath: &st
     track.write_warped_track_to_file(&warpset, &filename);
     println!("Track saved!");
 }
+
+// Useful to stick in the main loop for debugging warpset projections
+//const grid_size : usize = 40;
+//const debug_height : f32= 4.5;
+//const point_size : f32= 1./((grid_size+1) as f32*4.);
+//for x in 0..grid_size
+//{
+//    for y in 0..grid_size
+//    {
+//        let x_pos_bl = (x as f32 + 0.5)/grid_size as f32;
+//        let y_pos_bl = (y as f32 + 0.5)/grid_size as f32;
+//        let pos_bl64 = na::Vector2::<f64>::new(x_pos_bl.into(), y_pos_bl.into());
+//        let pos_in_offset = warpset.map_point_from_baseline_to_offset(&pos_bl64);
+//        let colour = if pos_in_offset.is_some()
+//        { 
+//            Color{
+//                r: 0.,
+//                g: pos_in_offset.unwrap().x as f32,
+//                b: pos_in_offset.unwrap().y as f32,
+//                a: 1.
+//            }
+//        } else {
+//            RED
+//        };
+//        let pos_w = vec2(x_pos_bl, y_pos_bl) * baseline_size;
+//        draw_plane(vec3(pos_w.x, debug_height, pos_w.y),
+//                   vec2(point_size, point_size), 
+//                   None,
+//                   colour
+//                  );
+//    }
+//}

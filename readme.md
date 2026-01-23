@@ -1,5 +1,7 @@
-### Image Aligner
+# Image Aligner & Tools
 The program in here implements a multi-patch image aligner, used to calculate and store the warpmesh required to transform one image (the **offset**) - and an abitrary CSVs of points in that image's coordinate space - into the coordinate space of another (the **baseline**).
+
+Also included are a few [tools](tools).
 
 ## Building
 The program is written in Rust and can be compiled with the command:
