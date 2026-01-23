@@ -117,7 +117,7 @@ impl Correspondences
         let diff = b-a;
 
         let line_len = diff.length();
-        let line_colour_ratio = (line_len.max(0.001)/0.5).min(1.0); //1.4142 is max distance 
+        let line_colour_ratio = (line_len.max(0.001)/0.05).min(1.0); //1.4142 is max distance 
         //let line_colour = Color{r:line_colour_ratio, g:1.-line_colour_ratio, b:0., a:alpha}; // red -> green
         //let line_colour = Color{r:line_colour_ratio, g:1., b:line_colour_ratio, a:alpha};// white -> green
         let line_colour = Color{r:1., g:1.-line_colour_ratio, b:1.-line_colour_ratio, a:alpha};// red -> white 
