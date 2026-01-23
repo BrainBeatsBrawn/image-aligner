@@ -141,7 +141,7 @@ impl WarpSet
     pub fn from_file(filepath: &str, offset_image: & Texture2D) -> Option<WarpSet>
     {
         println!("Reading file \"{}\"...", filepath);
-        let file_contents = read_to_string(filepath).expect("Couldn't load file from given filepath.");
+        let file_contents = read_to_string(filepath).expect("Couldn't load warp file file from given filepath.");
         let vector = get_start_points_from_string(file_contents).expect("Start points malformed.");
         Self::new(&vector, offset_image)
     }
@@ -419,9 +419,7 @@ impl WarpSet
                 let warp_p4 = self.warped_points[(x+1,y+1)];
                 
                 // Compute the uv in this subregion
-                //let uv = Self::invBilinear(p, warp_p1, warp_p2,
-                //                              warp_p3, warp_p4);
-                let uv = Self::invBilinear(p, warp_p1, warp_p3,
+                let uv = Self::inv_bilinear(p, warp_p1, warp_p3,
                                               warp_p2, warp_p4);
                 if uv.is_none() { continue; }
                 let uv = uv.unwrap();
@@ -444,17 +442,17 @@ impl WarpSet
     // function from demonstrated by Inigo Quilez at https://iquilezles.org/articles/ibilinear/
     // HackerHam Version:
     // https://gist.github.com/ivanpopelyshev/2a75479075286deb8ee5dc1fb2e07f09
-    pub fn invBilinear(p: &Vector2<f64>, a: Vector2<f64>, b: Vector2<f64>, d: Vector2<f64>, c: Vector2<f64>) -> Option<Vector2<f64>>
+    pub fn inv_bilinear(p: &Vector2<f64>, a: Vector2<f64>, b: Vector2<f64>, d: Vector2<f64>, c: Vector2<f64>) -> Option<Vector2<f64>>
     {
         fn cross2d(a: &Vector2<f64>, b: &Vector2<f64>) -> f64
         {
             a.x*b.y - a.y*b.x
         }
     
-        let mut e = b-a;
-        let mut f = d-a;
-        let mut g = a-b+c-d;
-        let mut h = p-a;
+        let e = b-a;
+        let f = d-a;
+        let g = a-b+c-d;
+        let h = p-a;
     
         // Get a measure of the size of the region that we
         // can scale everything by to avoid rounding errors
@@ -468,7 +466,7 @@ impl WarpSet
         let k0u = cross2d(&h, &f);
 
         let mut v1 = 0.0;
-        let mut u1 = 0.0;
+        let u1;
         let mut v2 = 0.0;
         let mut u2 = 0.0;
         
@@ -540,7 +538,7 @@ impl WarpSet
         }
         mesh_string.pop(); // Remove the last comma
         file.write_all(mesh_string.as_bytes()).unwrap();
-        println!("Warpmesh file written.");
+        println!("Warpmesh file written!");
     }
 
     //// Drawing
