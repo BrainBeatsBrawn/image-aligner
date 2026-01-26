@@ -15,16 +15,14 @@ The program can be run by executing the built executable found at `target/releas
 
 ```
 Usage:
-  target/debug/track-aligner [OPTIONS] BASELINE_IMAGE BASELINE_SEG OFFSET_IMAGE OFFSET_IMAGE_SEG
+  target/debug/track-aligner [OPTIONS] BASELINE_IMAGE OFFSET_IMAGE
 
 Aligns two images through a multi-patch warp. Press 'h' for hotkeys.
 
 Positional arguments:
   BASELINE_IMAGE        Path to the baseline image (the one that will not be
                         warped)
-  BASELINE_SEG          Path to the baseline bush segmentation image
   OFFSET_IMAGE          Path to the offset image (the one that will be warped)
-  OFFSET_IMAGE_SEG      Path to the offset bush segmentation image
 
 Optional arguments:
   -h,--help             Show this help message and exit
