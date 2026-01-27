@@ -187,7 +187,6 @@ impl Correspondences
                     op: Vector2::<f64>::new(*offset_point[0].as_ref().unwrap(), *offset_point[1].as_ref().unwrap())
                 }
             );
-            println!("baseline: {:?}", baseline_point);
         }
     }
 }

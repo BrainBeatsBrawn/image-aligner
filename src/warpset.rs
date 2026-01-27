@@ -471,7 +471,7 @@ impl WarpSet
         let mut u2 = 0.0;
         
         // if edges are parallel, this is a linear equation
-        const EPSILON: f64 = 0.00001;
+        const EPSILON: f64 = 0.0000001;
         if k2.abs() < EPSILON
         {
             v1 = -k0/k1;

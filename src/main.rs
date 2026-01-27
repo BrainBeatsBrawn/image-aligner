@@ -328,7 +328,7 @@ async fn main() {
         // Correspondences
         if draw_mesh
         {
-            let corr_thickness = 0.01 * camera.fovy;
+            let corr_thickness = 0.005 * camera.fovy;
             correspondences.draw(&warpset, &baseline_size, &mouse_pos_w, corr_thickness);
         }
 
