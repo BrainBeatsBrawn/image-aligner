@@ -1,0 +1,12 @@
+We probably don't need this.
+
+The camera was at the position:
+x: -0.408661 m
+y: 0.273954 m
+z: 3.29026 m
+
+With orthographic scale: 16.935
+
+Giving positions of x+,y+: 8.05884, 8.74145
+                    x-,y-: -8.8762, -8.19355
+
