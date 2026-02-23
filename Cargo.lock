@@ -18,20 +18,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "aligner-macroquad"
-version = "0.1.0"
-dependencies = [
- "argparse",
- "chrono",
- "csv",
- "env_logger",
- "log",
- "macroquad",
- "nalgebra",
- "num-traits",
-]
-
-[[package]]
 name = "allocator-api2"
 version = "0.2.21"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -286,6 +272,20 @@ dependencies = [
  "color_quant",
  "num-traits",
  "png",
+]
+
+[[package]]
+name = "image-aligner"
+version = "0.1.0"
+dependencies = [
+ "argparse",
+ "chrono",
+ "csv",
+ "env_logger",
+ "log",
+ "macroquad",
+ "nalgebra",
+ "num-traits",
 ]
 
 [[package]]
