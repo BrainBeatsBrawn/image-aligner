@@ -1,11 +1,11 @@
 [package]
-name = "aligner-macroquad"
+name = "image-aligner"
 version = "0.1.0"
 edition = "2024"
 authors = ["Blayze Millwrd"]
 
 [[bin]]
-name = "track-aligner"
+name = "image-aligner"
 path = "src/main.rs"
 
 [dependencies]
