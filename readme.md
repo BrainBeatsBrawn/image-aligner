@@ -1,15 +1,24 @@
 # Image Aligner & Tools
-The program in here implements a multi-patch image aligner, used to calculate and store the warpmesh required to transform one image (the **offset**) - and an abitrary CSVs of points in that image's coordinate space - into the coordinate space of another (the **baseline**).
+This is the repository for the _Image Aligner_, a software to manually map one image onto another.
+It is the basis of the dataset alignment phase used in the paper &lt;TODO, A PAPER NEEDS TO BE LINKED HERE&gt;.
 
-Also included are a few [tools](tools).
+What proceeds is [information speficially about the tool](#Tool-Compilation-and-Basic-Usage) (and it's helper tools), building and running them, followed by instructions on using them to recreate Figure 1 in the previous mentioned paper as a "full-usage example".
 
-## Building
+## Tool Compilation and Basic Usage
+The primary program in here (the "Image Aligner") implements a multi-patch image aligner, used to calculate and store the warpmesh required to transform one image (the **offset**) - and an abitrary CSVs of points in that image's coordinate space - into the coordinate space of another (the **baseline**).
+It does this by displaying the **offset** image over the top of the **baseline** at varying selectable degrees of transparency, and allowing the user to move the corners of the **offset** image.
+Once the user is happy with the initial alignment of the four corners of the image, it can be _sub-divided_ into multiple sub-images, which each can be manipulated to form the _warpmesh_ that maps the **offset** onto the **baseline**.
+To aid the user in doing this points that are known to be the same in both images (**correspondence points**) can be marked on both images, and a visual indicator of the distance between them shown.
+
+Also included are a few [tools](tools) that make processing associated data being fed into or taken out of the program a little easier to manage. They are documented on the readme of the folder they exist within, linked.
+
+### Building
 The program is written in Rust and can be compiled with the command:
 ```
 $ cargo build --release
 ```
 
-## Usage
+### Usage
 
 The program can be run by executing the built executable found at `target/release/track-aligner`. Program help can be accessed by passing the `-h` argument:
 
@@ -61,3 +70,5 @@ o       - stage a correspondence point in Offset space.
 c       - Commit the staged correspondence points.
 p       - save the current Point correspondences.
 ```
+
+## Full Usage Example
