@@ -72,3 +72,7 @@ p       - save the current Point correspondences.
 ```
 
 ## Full Usage Example
+![An excerpt from figure 1 of the paper, showing a warp alignment at its early and late stages](docs/figure excerpt.png)
+
+
+
