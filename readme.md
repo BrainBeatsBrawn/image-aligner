@@ -90,9 +90,6 @@ Here, we will use three files, which can be found within [ORDA](link to ORDA):
 | combined2_opt_dense_alphad.png | A combined top-down image mosaic of the Seville environment, as numerous ants travelled within it, taken from CATER and adjusted to have a transparent background. |
 | Ant03R01.csv | Again, from CATER, the lifetime path of an ant within the Seville environment, normalised such that the coordinates are not pixel-indexed to the image mosaic but are indexed from (0,0) to (1,1) - *eg, they are in the combined image's coordinate space* |
 
-- Outline the usage example: Where the data came from, what it is, etc.
-- Where to get the data, the optional low-res data
-
 ### Opening a Baseline and Offset Image
 Initially opening the program with `top-down-render(-14,14)-(14,-14).png` as the **baseline**, and `combined2_opt_dense_alphad.png` as the **offset**, you are presented with the mosaic image overlaid on top of the baseline and streched to completely fill it's area:
 ![](docs/)
