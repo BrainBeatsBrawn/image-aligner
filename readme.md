@@ -76,7 +76,7 @@ p       - save the current Point correspondences.
 ```
 
 ## Full Usage Example
-![An excerpt from figure 1 of the paper, showing a warp alignment at its early and late stages](docs/figure%20excerpt.png)
+![An excerpt from figure 1 of the paper, showing a warp alignment at its early and late stages](docs/figure%20excerpt.png)  
 *An excerpt from Figure 1 of the paper, showing the final warp alignment at it's early and late stages.*
 
 In the paper, the image aligner is used to align an **offset** generated mosaic of top-down photographs taken and combined to form an image of the *real-world* landscape that *Cataglyphis Velox* ants used to navigate during a previous experiment to a 3D rendered image of the same environment using 3D lidar scan data (the **baseline**).
@@ -100,32 +100,32 @@ In particular, the `*-small` variants are useful for quickly getting used to the
 In the following sections, it is assumed that you have downloaded the content of the ORDA repository to the `data/` folder.
 
 ### Opening a Baseline and Offset Image
-Initially opening the program with `top-down-habitat-render-(-14,14)-(14,-14).png` as the **baseline**, and `top-down-image-render.png` as the **offset**, you are presented with the mosaic image overlaid on top of the baseline and streched to completely fill it's area - the offset image can be dragged around by it's four corners to palce it at different transforms across the baseline image:
-![A gif showing the program running with a baseline and offset image loaded](docs/basic-load.gif)
+Initially opening the program with `top-down-habitat-render-(-14,14)-(14,-14).png` as the **baseline**, and `top-down-image-render.png` as the **offset**, you are presented with the mosaic image overlaid on top of the baseline and streched to completely fill it's area - the offset image can be dragged around by it's four corners to palce it at different transforms across the baseline image:  
+![A gif showing the program running with a baseline and offset image loaded](docs/basic-load.gif)  
 *Produced using `target/release/image-aligner data/top-down-habitat-render-\(-14\,14\)-\(14\,-14\).png data/top-down-image-render.png`*
 
 Warpmeshes can be saved by pressing 's', which will save a `.wrp` file with the current datetime that stores the warpmesh.
 By pressing the number keys 0-9 (or the up/down arrows), the opacity of the offset image can be changed to better see the baseline image below to better match the two images.
 
 ### Adding Correspondence Points
-A pair of correspondence points can be added to the baseline and offset image respectively by pressing 'b' and 'o', then 'committed' to the current set of points by pressing 'c'. These correspondence pointsets can then be saved with 'p', which produces a `.pts` file (saved as a datetime stamp), which can be loaded using the `-c` or `--correspondence-input-file` program flags. Here you can see the loaded 97-correspondence correspondence set **correspondance-points.pts** as it is first seen when loading the seville image- and habitat3D model-space images:
-![A gif showing the program running with correspondence points added](docs/added-correspondence-points.gif)
+A pair of correspondence points can be added to the baseline and offset image respectively by pressing 'b' and 'o', then 'committed' to the current set of points by pressing 'c'. These correspondence pointsets can then be saved with 'p', which produces a `.pts` file (saved as a datetime stamp), which can be loaded using the `-c` or `--correspondence-input-file` program flags. Here you can see the loaded 97-correspondence correspondence set **correspondance-points.pts** as it is first seen when loading the seville image- and habitat3D model-space images:  
+![A gif showing the program running with correspondence points added](docs/added-correspondence-points.gif)  
 *Produced using `target/release/image-aligner data/top-down-habitat-render-\(-14\,14\)-\(14\,-14\).png data/top-down-image-render.png -c data/correspondence-points.pts`*
 
 Note that the loaded correspondence points show at first that the images are 180 degrees out of rotation with each other - this is because the coordinate systems in the Habitat3D modelspace image is 180 degrees out of rotation with the Seville imagespace image.
 
 ### Loading Presaved Warpmeshes
-Warpmeshes can be loaded using the `-i` or `--input-file` program flags, which will ingest a `.wrp` file and load the warpmesh with that file's contents. Below are the two displayed warpmeshes from the paper - the single-patch warpmesh and the multi-patch warpmesh, which was gained from a period of user interaction to align the two images. Also loaded are the correspondence points from before, to show how much improvement in representation a multi-patch warp has over a single:
-![A single-patch warp loaded into the prgoram](docs/single-warp-image.png)
+Warpmeshes can be loaded using the `-i` or `--input-file` program flags, which will ingest a `.wrp` file and load the warpmesh with that file's contents. Below are the two displayed warpmeshes from figure 1 of the paper - the single-patch warpmesh and the multi-patch warpmesh, which was gained from a period of user interaction to align the two images. Also loaded are the correspondence points from before, to show how much improvement in representation a multi-patch warp has over a single:  
+![A single-patch warp loaded into the prgoram](docs/single-warp-image.png)  
 *Produced using `target/release/image-aligner data/top-down-habitat-render-\(-14\,14\)-\(14\,-14\).png data/top-down-image-render.png -c data/correspondence-points.pts -i data/single-patch-warpmesh.wrp`*
 
-![A multi-patch warp loaded into the prgoram](docs/multi-warp-image.png)
+![A multi-patch warp loaded into the prgoram](docs/multi-warp-image.png)  
 *Produced using `target/release/image-aligner data/top-down-habitat-render-\(-14\,14\)-\(14\,-14\).png data/top-down-image-render.png -c data/correspondence-points.pts -i data/multi-patch-warpmesh.wrp`*
 
 ### Loading and Visualising Track Data
 When warping the mesh, it might not be enough to just change the opacity of the offset image and to see correspondence points, sometimes you may want to sanity check your work by loading track data into the image.
-Track data, in the imagespace of the offset image (here the seville imagespace image) can be loaded with the `-t` or `--input-track-file` program flags, to load and display a track across the offset space. As the offset space is warped, so too is the track:
-![A track being loaded and visualised](docs/showing-tracks.gif)
+Track data, in the imagespace of the offset image (here the seville imagespace image) can be loaded with the `-t` or `--input-track-file` program flags, to load and display a track across the offset space. As the offset space is warped, so too is the track:  
+![A track being loaded and visualised](docs/showing-tracks.gif)  
 *Produced using `target/release/image-aligner data/top-down-habitat-render-\(-14\,14\)-\(14\,-14\).png data/top-down-image-render.png -c data/correspondence-points.pts -i data/multi-patch-warpmesh.wrp -t data/2D_Ant_Tracks_In_ImageSpace_Seville/Ant03R03.csv-normalised.csv`*
 
 
