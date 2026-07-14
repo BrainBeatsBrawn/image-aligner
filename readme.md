@@ -83,21 +83,49 @@ In the paper, the image aligner is used to align an **offset** generated mosaic 
 The generated mosaic image and related ant tracks were sourced from the [CATER dataset](https://www.science.org/doi/10.1126/sciadv.adg2094), while the 3D environment of Seville, Spain, that the experimental work was derived from the [Habitat3D project](https://insectvision.dlr.de/3d-reconstruction-tools/habitat3d).
 However, you can find a repository of the combined data [here](link to ORDA). This contains track data that has been normalised to the baseline image coordinates and is convenient.
 
-Here, we will use three files, which can be found within [ORDA](link to ORDA):
+The following walkthrough will use the files found within [ORDA](link to ORDA). The content of these files is discribed below:
 | Filename | Description |
 |----------|-------------|
-| top-down-render(-14,14)-(14,-14).png | An orthographic rendering of the Seville environment as captured in 3D by the Habitat3D project. This rendering was taken such that the top left and bottom right corners have X/Y coordinates *(-14,14)* and *(14,-14)* within the 3D environment (assuming the Z heading is the vertical axis). |
-| combined2_opt_dense_alphad.png | A combined top-down image mosaic of the Seville environment, as numerous ants travelled within it, taken from CATER and adjusted to have a transparent background. |
-| Ant03R01.csv | Again, from CATER, the lifetime path of an ant within the Seville environment, normalised such that the coordinates are not pixel-indexed to the image mosaic but are indexed from (0,0) to (1,1) - *eg, they are in the combined image's coordinate space* |
+| top-down-habitat-render(-14,14)-(14,-14).png | An orthographic rendering of the Seville environment as captured in 3D by the Habitat3D project. This rendering was taken such that the top left and bottom right corners have X/Y coordinates *(-14,14)* and *(14,-14)* within the 3D environment (assuming the Z heading is the vertical axis). This will form our **baseline space** image. |
+| to-down-image-render.png | A combined top-down image mosaic of the Seville environment, as numerous ants travelled within it, taken from CATER and adjusted to have a transparent background. This will form our **offset space** image. |
+| correspondance-points.pts | A set of 97 correspondences between the offset and baseline images - points that represent the same object in both. |
+| single-patch-warpmesh.wrp | A configured warpmesh that only uses only a single patch (four corners) to attempt to fit the offset to the baseline (the left image in the above excerpt). |
+| multi-patch-warpmesh.wrp | A configured warpmesh that uses 64 patches (81 corners) to to fit the offset image to the baseline better than the single-patch variant. |
+| 2D_Ant_Tracks_In_ImageSpace_Seville | A folder containing the recorded ant tracks within the Seville imagespace (our **offset** imagespace). This is almost identical to that provided by the CATER dataset, however these tracks have been normalised to be in the coordinate space (0,0) to (1,1) to properly be defined within the imagespace itself, rather than using the pixel-wise coordinates of the original data. This normalisation was done using the `track-normaliser.py` tool within the [tools](tools/) folder.
+| 2D_Ant_Tracks_In_HabitatSpace_Seville | A folder containing the recorded ant tracks warped to be within the Habitat3D imagespace (our **baseline** imagespace). This is the result of applying the full multi-patch warpmesh to all tracks currently in the Seville imagespace, and is what will be produced by the end of this walkthrough. |
+
+Note that if you are having issues running the program with the larger image files, or they are taking too long to load, you can choose to use one of the available variations of the large images present in the `low-memory-images` folder.
+In particular, the `*-small` variants are useful for quickly getting used to the program.
+
+In the following sections, it is assumed that you have downloaded the content of the ORDA repository to the `data/` folder.
 
 ### Opening a Baseline and Offset Image
-Initially opening the program with `top-down-render(-14,14)-(14,-14).png` as the **baseline**, and `combined2_opt_dense_alphad.png` as the **offset**, you are presented with the mosaic image overlaid on top of the baseline and streched to completely fill it's area:
-![](docs/)
+Initially opening the program with `top-down-habitat-render-(-14,14)-(14,-14).png` as the **baseline**, and `top-down-image-render.png` as the **offset**, you are presented with the mosaic image overlaid on top of the baseline and streched to completely fill it's area - the offset image can be dragged around by it's four corners to palce it at different transforms across the baseline image:
+![A gif showing the program running with a baseline and offset image loaded](docs/basic-load.gif)
+*Produced using `target/release/image-aligner data/top-down-habitat-render-\(-14\,14\)-\(14\,-14\).png data/top-down-image-render.png`*
 
+Warpmeshes can be saved by pressing 's', which will save a `.wrp` file with the current datetime that stores the warpmesh.
+By pressing the number keys 0-9 (or the up/down arrows), the opacity of the offset image can be changed to better see the baseline image below to better match the two images.
 
-- Opening the baseline iamge without anything, explaining that the image can be moved around
-- Opening with the correspondence points, showing that the distance is displayed, and through devision the distances can be decreased
-- Opening with the correspondence points and the final warpset, showing the final image.
-- Opening all with the **PREPROCESSED** track CSVs
+### Adding Correspondence Points
+A pair of correspondence points can be added to the baseline and offset image respectively by pressing 'b' and 'o', then 'committed' to the current set of points by pressing 'c'. These correspondence pointsets can then be saved with 'p', which produces a `.pts` file (saved as a datetime stamp), which can be loaded using the `-c` or `--correspondence-input-file` program flags. Here you can see the loaded 97-correspondence correspondence set **correspondance-points.pts** as it is first seen when loading the seville image- and habitat3D model-space images:
+![A gif showing the program running with correspondence points added](docs/added-correspondence-points.gif)
+*Produced using `target/release/image-aligner data/top-down-habitat-render-\(-14\,14\)-\(14\,-14\).png data/top-down-image-render.png -c data/correspondence-points.pts`*
+
+Note that the loaded correspondence points show at first that the images are 180 degrees out of rotation with each other - this is because the coordinate systems in the Habitat3D modelspace image is 180 degrees out of rotation with the Seville imagespace image.
+
+### Loading Presaved Warpmeshes
+Warpmeshes can be loaded using the `-i` or `--input-file` program flags, which will ingest a `.wrp` file and load the warpmesh with that file's contents. Below are the two displayed warpmeshes from the paper - the single-patch warpmesh and the multi-patch warpmesh, which was gained from a period of user interaction to align the two images. Also loaded are the correspondence points from before, to show how much improvement in representation a multi-patch warp has over a single:
+![A single-patch warp loaded into the prgoram](docs/single-warp-image.png)
+*Produced using `target/release/image-aligner data/top-down-habitat-render-\(-14\,14\)-\(14\,-14\).png data/top-down-image-render.png -c data/correspondence-points.pts -i data/single-patch-warpmesh.wrp`*
+
+![A multi-patch warp loaded into the prgoram](docs/multi-warp-image.png)
+*Produced using `target/release/image-aligner data/top-down-habitat-render-\(-14\,14\)-\(14\,-14\).png data/top-down-image-render.png -c data/correspondence-points.pts -i data/multi-patch-warpmesh.wrp`*
+
+### Loading and Visualising Track Data
+When warping the mesh, it might not be enough to just change the opacity of the offset image and to see correspondence points, sometimes you may want to sanity check your work by loading track data into the image.
+Track data, in the imagespace of the offset image (here the seville imagespace image) can be loaded with the `-t` or `--input-track-file` program flags, to load and display a track across the offset space. As the offset space is warped, so too is the track:
+![A track being loaded and visualised](docs/showing-tracks.gif)
+*Produced using `target/release/image-aligner data/top-down-habitat-render-\(-14\,14\)-\(14\,-14\).png data/top-down-image-render.png -c data/correspondence-points.pts -i data/multi-patch-warpmesh.wrp -t data/2D_Ant_Tracks_In_ImageSpace_Seville/Ant03R03.csv-normalised.csv`*
 
 
