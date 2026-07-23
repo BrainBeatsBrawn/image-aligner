@@ -81,9 +81,9 @@ p       - save the current Point correspondences.
 
 In the paper, the image aligner is used to align an **offset** generated mosaic of top-down photographs taken and combined to form an image of the *real-world* landscape that *Cataglyphis Velox* ants used to navigate during a previous experiment to a 3D rendered image of the same environment using 3D lidar scan data (the **baseline**).
 The generated mosaic image and related ant tracks were sourced from the [CATER dataset](https://www.science.org/doi/10.1126/sciadv.adg2094), while the 3D environment of Seville, Spain, that the experimental work was derived from the [Habitat3D project](https://insectvision.dlr.de/3d-reconstruction-tools/habitat3d).
-However, you can find a repository of the combined data [here](link to ORDA). This contains track data that has been normalised to the baseline image coordinates and is convenient.
+However, you can find a repository of the combined data [here](https://orda.shef.ac.uk/articles/dataset/Dataset_Reconstructing_the_visual_histories_of_desert_ants/32860832) within the "Track Aligner" folder. This contains track data that has been normalised to the baseline image coordinates and is convenient.
 
-The following walkthrough will use the files found within [ORDA](link to ORDA). The content of these files is discribed below:
+The following walkthrough will use the files linked above. The content of these files is discribed below:
 | Filename | Description |
 |----------|-------------|
 | top-down-habitat-render(-14,14)-(14,-14).png | An orthographic rendering of the Seville environment as captured in 3D by the Habitat3D project. This rendering was taken such that the top left and bottom right corners have X/Y coordinates *(-14,14)* and *(14,-14)* within the 3D environment (assuming the Z heading is the vertical axis). This will form our **baseline space** image. |
